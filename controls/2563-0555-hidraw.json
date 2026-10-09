@@ -1,0 +1,37 @@
+{
+  "name": "ShanWan Twin USB Joystick",
+  "backend": "hidraw",
+  "access": "read-only",
+  "match": {
+    "bus": "usb",
+    "vendor": "2563",
+    "product": "0555"
+  },
+  "controllers": [
+    {
+      "input_report_id": 1
+    },
+    {
+      "input_report_id": 2
+    }
+  ],
+  "controls": {
+    "south": "Button.3",
+    "east": "Button.2",
+    "west": "Button.4",
+    "north": "Button.1",
+    "back": "Button.9",
+    "start": "Button.10",
+    "left_stick_x": "GenericDesktop.X",
+    "left_stick_y": "GenericDesktop.Y",
+    "right_stick_x": "GenericDesktop.Z",
+    "right_stick_y": "GenericDesktop.Rz",
+    "dpad": "GenericDesktop.HatSwitch",
+    "left_shoulder": "Button.5",
+    "right_shoulder": "Button.6",
+    "left_trigger": "Button.7",
+    "right_trigger": "Button.8",
+    "left_stick": "Button.11",
+    "right_stick": "Button.12"
+  }
+}

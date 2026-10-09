@@ -1,0 +1,28 @@
+{
+  "name": "HID 0810:0001",
+  "backend": "evdev",
+  "access": "read-only",
+  "match": {
+    "bus": "usb",
+    "vendor": "0810",
+    "product": "0001"
+  },
+  "buttons": {
+    "west": 45,
+    "east": 48,
+    "north": 21,
+    "south": 30,
+    "back": 54,
+    "start": 28,
+    "up": 103,
+    "down": 108,
+    "left": 105,
+    "right": 106
+  },
+  "axes": {
+    "left_stick_x": 0,
+    "left_stick_y": 1,
+    "dpad_x": 16,
+    "dpad_y": 17
+  }
+}

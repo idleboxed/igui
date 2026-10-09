@@ -1,0 +1,373 @@
+{
+  "games": [
+    {
+      "platform": "MD",
+      "image": "demo-00.md",
+      "title": "Amber Quest",
+      "year": 1990,
+      "players": 2,
+      "genre": "Platformer",
+      "description": "An amber lantern has gone dark above the coast. Cross swinging bridges, climb the lighthouse and gather the sparks scattered through its machinery. Each restored lamp opens a different path back through the tower.\n\nThe tide rises after every bell. Choose between a safe route along the walls and a shorter climb over moving platforms. A second traveller can help carry heavy lenses, but narrow ledges leave little room for mistakes.",
+      "hash": "e42439e2a01baaecef23602bcd5b9cd876dbd41813e5b2d0115038dc1ccc31f8",
+      "region": [
+        "USA"
+      ]
+    },
+    {
+      "platform": "NES",
+      "image": "demo-01.nes",
+      "title": "Amber Quest",
+      "year": 1991,
+      "players": 1,
+      "genre": "Platformer",
+      "description": "The forest has hidden its last amber seed inside a hollow mountain. Hop between roots and falling leaves, then follow the glow into chambers where the floor changes with each step.\n\nCollect three carved seals to open the summit gate. Secret rooms reward patient exploration, while the shortest route demands a careful rhythm of jumps.",
+      "hash": "23623d2cf8ff047d96fa6973c370f90bc01a44d8c35aca35396be5ac3d2e9455",
+      "region": [
+        "Japan"
+      ]
+    },
+    {
+      "platform": "PSX",
+      "image": "demo-02.cue",
+      "title": "Alpine Circuit",
+      "year": 1992,
+      "players": 1,
+      "genre": "Racing",
+      "description": "A mountain rally begins before sunrise. Guide a lightweight car through pine forests, snow tunnels and a steep descent into the valley. Blind corners reward an early lift from the accelerator; wide bends invite a controlled slide.\n\nEach stage has two routes. The high pass is shorter but narrow, with loose stones along the edge. The valley road gives more room to recover, although its long straights lead into tight village turns. Learn the landmarks before trying to beat the clock.\n\nWeather changes between runs. Rain makes the painted road markings slippery, while fog hides the next checkpoint until the last moment. Keep a little speed in reserve and listen for the co-driver before committing to a corner.\n\nComplete the circuit to unlock a night stage with no roadside lights. Only reflective signs and the distant glow of the finish line show the way home.",
+      "hash": "d22b8e57e4b1714761c6cacd6d5beef9d9df2bd6df63a5f8c9733abea5a812a6",
+      "region": [
+        "Europe"
+      ]
+    },
+    {
+      "platform": "GB",
+      "image": "demo-03.gb",
+      "title": "Astro Patrol",
+      "year": 1993,
+      "players": 2,
+      "genre": "Arcade",
+      "description": "Patrol a crowded asteroid belt in a tiny rescue craft. Turn drifting cargo into cover, escort stranded shuttles and keep a clear path to the station before the next meteor shower arrives.",
+      "hash": "dc9c99dbbab9abdb99139d293ba8c538ec6092c80f22dde47732dd592b2fa924",
+      "region": []
+    },
+    {
+      "platform": "GBA",
+      "image": "demo-04.gba",
+      "title": "Block Garden",
+      "year": 1994,
+      "players": 1,
+      "genre": "Puzzle",
+      "description": "Grow a garden by sliding coloured stone blocks into matching beds. A completed row becomes a stream, carrying water to flowers that were previously out of reach.\n\nSome blocks are rooted and cannot be moved directly. Redirect the water, open the wooden gates and plan the order of your moves before the garden fills up. There is no time limit: every puzzle can be solved at your own pace.",
+      "hash": "c7d30ad440409e2f79e6f4bbba32061cab4a88b1153405b0791c5a7a535930c6",
+      "region": [
+        "Japan",
+        "USA",
+        "Europe"
+      ]
+    },
+    {
+      "platform": "SNES",
+      "image": "demo-05.sfc",
+      "title": "Blue Horizon",
+      "year": 1995,
+      "players": 1,
+      "genre": "Adventure",
+      "description": "Beyond the blue horizon lies an island that appears only at low tide. Sail between fishing villages, trade stories for charts and piece together the route drawn in an unfinished captain's journal.\n\nThe crew remembers whom you help. A repaired pier may reveal a new crossing; a forgotten promise may close one. Exploration, conversation and a small collection of useful tools carry the journey forward.",
+      "hash": "526dc97c32a4d336f7b600441da0bba3c9525368bf3eda5bd004ada0afde67d4",
+      "region": null
+    },
+    {
+      "platform": "MD",
+      "image": "demo-06.md",
+      "title": "Copper Canyon",
+      "year": 1996,
+      "players": 2,
+      "genre": "Racing",
+      "description": "Race an old rally truck through a copper-coloured canyon. Dust trails hide your rivals, dry riverbeds provide risky shortcuts and sharp rock arches leave just enough space for a clean overtake.\n\nFinish with an intact engine to keep your place in the next heat. Speed is useful, but knowing when to slow down is what wins the desert cup.",
+      "hash": "47c6c56da5379c71586ef497118480ceaa4076e6c8b833987cbaf5bfda67db84",
+      "region": [
+        "USA"
+      ]
+    },
+    {
+      "platform": "GBA",
+      "image": "demo-07.gba",
+      "title": "Crystal Trail",
+      "year": 1997,
+      "players": 1,
+      "genre": "Adventure",
+      "description": "A trail of singing crystals leads into an abandoned observatory. Match the notes of locked doors, rotate mirrors and use reflected light to uncover bridges above the mist.\n\nEvery recovered star chart adds a clue to the final room. You can return to earlier areas with new tools, so an unreachable ledge may be worth remembering.",
+      "hash": "200ea621e05b83651d071c76ed19f3f6d829364e374ee84811452d1f94140bcd",
+      "region": [
+        "Japan"
+      ]
+    },
+    {
+      "platform": "NES",
+      "image": "demo-08.nes",
+      "title": "Delta Wings",
+      "year": 1998,
+      "players": 1,
+      "genre": "Arcade",
+      "description": "Lead a formation of delta-wing fighters across an endless sea. Weave through searchlights, protect the supply plane and break enemy formations without leaving your wingman behind.",
+      "hash": "b8bd60f5b189c0fe33347cafd564478fb783742af38046614e350bf0d3caf853",
+      "region": [
+        "Europe"
+      ]
+    },
+    {
+      "platform": "PSX",
+      "image": "demo-09.cue",
+      "title": "Drift Avenue",
+      "year": 1999,
+      "players": 2,
+      "genre": "Racing",
+      "description": "Empty streets become a closed racing course after the last tram leaves. Link long drifts through warehouse corners, pass beneath the elevated railway and keep your tyres away from the kerb.\n\nSmooth driving builds a score multiplier. A collision breaks the chain, so one tidy lap can beat a faster but careless run.",
+      "hash": "850a4d776ab8c55b5d548ec009d6fcc0b7865f2a8e0835bec42e973fefffe7aa",
+      "region": []
+    },
+    {
+      "platform": "SNES",
+      "image": "demo-10.sfc",
+      "title": "Echo Valley",
+      "year": 1990,
+      "players": 1,
+      "genre": "Platformer",
+      "description": "In Echo Valley, every sound changes the landscape. Ring a small bell to wake sleeping platforms, bounce from giant mushrooms and follow the answering notes through a ruined amphitheatre.\n\nDifferent stones echo at different speeds. Watch a full cycle before crossing, or turn a delayed response into the extra step needed to reach a hidden passage.",
+      "hash": "af1f7e007ad88bc47b0dc0b5b3587c35c95b866e998f7edcd15927012fbec62e",
+      "region": [
+        "Japan",
+        "USA",
+        "Europe"
+      ]
+    },
+    {
+      "platform": "GB",
+      "image": "demo-11.gb",
+      "title": "Forest Courier",
+      "year": 1991,
+      "players": 1,
+      "genre": "Adventure",
+      "description": "Deliver letters to the animals of a sprawling forest. Remember the footpaths, borrow a boat when the bridge is flooded and ask the owl which trees still have lights on.\n\nThe parcels are small, but their stories connect the whole woodland. Return to a familiar clearing after a delivery to see what has changed.",
+      "hash": "32da1a37b61ddc1ff7c2c7f987c4eeae1a2c4340d48114707058e82cb2b1ecbe",
+      "region": null
+    },
+    {
+      "platform": "MD",
+      "image": "demo-12.md",
+      "title": "Galaxy Post",
+      "year": 1992,
+      "players": 2,
+      "genre": "Arcade",
+      "description": "The galaxy's mail route runs straight through a meteor storm. Catch drifting parcels, dodge spinning satellites and deliver every package to the right coloured airlock.\n\nFuel pods keep the route going. Miss a delivery and you can circle back, but each extra lap brings faster traffic through the docking lanes.",
+      "hash": "f99c6220b2820635715d68fd71201f794cf4b8fcb4586f591f105336acb752fb",
+      "region": [
+        "USA"
+      ]
+    },
+    {
+      "platform": "PSX",
+      "image": "demo-13.cue",
+      "title": "Harbor Sprint",
+      "year": 1993,
+      "players": 1,
+      "genre": "Racing",
+      "description": "Take a speedboat through a working harbour at dawn. Cut between buoys, ride the wake of larger ships and time each turn beneath the lifting bridges.\n\nCargo cranes cast moving shadows across the water. Use them as braking markers, but leave room for the swell that follows the ferry.",
+      "hash": "d72fb4c7ce6b8e805bf261a61b74ab983159cb24098ba1be9d15f99c7d073f97",
+      "region": [
+        "Japan"
+      ]
+    },
+    {
+      "platform": "GBA",
+      "image": "demo-14.gba",
+      "title": "Island Clock",
+      "year": 1994,
+      "players": 1,
+      "genre": "Puzzle",
+      "description": "An island clock has stopped, leaving each village in a different hour. Rotate clockwork paths and move the sun and moon tokens to restore the daily cycle.\n\nChanging one dial shifts several parts of the island. Sketch the sequence in your head before making a move: a bridge that exists at noon may disappear at dusk.",
+      "hash": "8cf679029a24f344444ee19842b9cf046c52425af93a13ae9471fbb9f6610492",
+      "region": [
+        "Europe"
+      ]
+    },
+    {
+      "platform": "NES",
+      "image": "demo-15.nes",
+      "title": "Jade Runner",
+      "year": 1995,
+      "players": 2,
+      "genre": "Platformer",
+      "description": "Carry a jade message across the rooftops before the city gates close. Clear gaps, duck beneath laundry lines and use swaying bamboo poles to reach the highest terraces.",
+      "hash": "cb88caa32c36d55c29229513ee980961ac2cf2d19f15f8e163920cba34baf1a4",
+      "region": []
+    },
+    {
+      "platform": "SNES",
+      "image": "demo-16.sfc",
+      "title": "Kite Adventure",
+      "year": 1996,
+      "players": 1,
+      "genre": "Adventure",
+      "description": "A handmade kite lifts a young explorer above a chain of floating islands. Read the wind, land on sheltered ledges and search abandoned gardens for the parts of an ancient weather vane.\n\nNot every gust is helpful. Storm clouds can carry you far from the path, but a well-timed descent may reveal an island hidden below the usual route.",
+      "hash": "760cdca3c36efb5b7c95f77d1b4cc1f5d3f170465b4baffe871003b42904e7fe",
+      "region": [
+        "Japan",
+        "USA",
+        "Europe"
+      ]
+    },
+    {
+      "platform": "GB",
+      "image": "demo-17.gb",
+      "title": "Lunar Signal",
+      "year": 1997,
+      "players": 1,
+      "genre": "Arcade",
+      "description": "A repeating signal is coming from the far side of the moon. Pilot a survey pod through narrow craters, collect the missing antenna parts and keep your radar clear of falling debris.",
+      "hash": "55dbb5af04a299b8770268d5dd22dfede05f2fa24a3043e9ec9a6bfcc0599500",
+      "region": null
+    },
+    {
+      "platform": "MD",
+      "image": "demo-18.md",
+      "title": "Meadow Express",
+      "year": 1998,
+      "players": 2,
+      "genre": "Platformer",
+      "description": "The meadow train is missing its passengers. Race beside the tracks, hop between moving wagons and help scattered field mice reach the right carriage.\n\nSwitches change the route at every station. Pick the branch that matches the tickets you carry, then hurry to the front before the next junction.",
+      "hash": "dc16fd7000db37194c4823a3ef6f1bc7dd25c31478d836d741fdfcd782121980",
+      "region": [
+        "USA"
+      ]
+    },
+    {
+      "platform": "PSX",
+      "image": "demo-19.cue",
+      "title": "Night Circuit",
+      "year": 1999,
+      "players": 1,
+      "genre": "Racing",
+      "description": "Neon signs reflect on a rain-soaked circuit. Follow the tail lights through tunnels and overpasses while the city's clock counts down to the final heat.\n\nA familiar corner can look very different in darkness. Brake by the trackside markers, avoid standing water and save your last burst of speed for the bridge.",
+      "hash": "e9c57b1e1ae842b93915e09296e6cbc78a19af04f512575235c4a723331be218",
+      "region": [
+        "Japan"
+      ]
+    },
+    {
+      "platform": "GBA",
+      "image": "demo-20.gba",
+      "title": "Orbit Station",
+      "year": 1990,
+      "players": 1,
+      "genre": "Arcade",
+      "description": "Keep a damaged orbital station alive one compartment at a time. Catch spare parts in zero gravity, seal leaking modules and guide repair drones away from loose electrical cables.\n\nThe station rotates slowly, changing the direction of drifting objects. Plan an interception rather than chasing a part all the way around the room.",
+      "hash": "243256ec35e70090d83185127f71fef608c862fc7511f0c667e5b2b3cfb5e1a4",
+      "region": [
+        "Europe"
+      ]
+    },
+    {
+      "platform": "NES",
+      "image": "demo-21.nes",
+      "title": "Paper Castle",
+      "year": 1991,
+      "players": 2,
+      "genre": "Adventure",
+      "description": "A paper castle unfolds from a forgotten storybook. Explore folded staircases, speak to ink-drawn guardians and collect words that reshape the rooms around you.\n\nA page can be turned only when its story is complete. Look for details in the margins: a small illustration may explain a puzzle in the main hall.",
+      "hash": "31b26c4d79987183afec5cf558c61eab628c58b351bd085d3b00d662c7b88705",
+      "region": []
+    },
+    {
+      "platform": "SNES",
+      "image": "demo-22.sfc",
+      "title": "Quartz Road",
+      "year": 1992,
+      "players": 1,
+      "genre": "Racing",
+      "description": "A bright quartz road winds across a frozen lake. Race nimble ice sleds between crystal pillars, make gentle steering corrections and search for patches of snow when you need grip.",
+      "hash": "8f5580cf02f6629e9048eec8386e3f7949ed63ae6c601b087ade430b109f8d29",
+      "region": [
+        "Japan",
+        "USA",
+        "Europe"
+      ]
+    },
+    {
+      "platform": "GB",
+      "image": "demo-23.gb",
+      "title": "River Puzzle",
+      "year": 1993,
+      "players": 1,
+      "genre": "Puzzle",
+      "description": "Guide a river through a valley of movable tiles. Join bends and straight channels, fill the millpond and leave a dry crossing for the villagers.\n\nWater starts flowing only when you open the sluice. Check every connection first: a route that reaches the mill may still leave the lower fields thirsty.",
+      "hash": "21863c4cbdb45a8c4ea98a91a029137026fb02f7c37c92e66da19dfd21b0131d",
+      "region": null
+    },
+    {
+      "platform": "MD",
+      "image": "demo-24.md",
+      "title": "Solar Route",
+      "year": 1994,
+      "players": 2,
+      "genre": "Arcade",
+      "description": "Escort a solar-powered freighter through the shadow of a giant planet. Collect sunlight between eclipses and clear a path through the debris before the engines lose power.\n\nYour weapons draw from the same reserve as the thrusters. Short, accurate bursts leave more energy for the long climb back into daylight.",
+      "hash": "bade0e5580e606be59ad1922a818e477b36e890aeea3a01741be9983798be060",
+      "region": [
+        "USA"
+      ]
+    },
+    {
+      "platform": "GBA",
+      "image": "demo-25.gba",
+      "title": "Tiny Summit",
+      "year": 1995,
+      "players": 1,
+      "genre": "Platformer",
+      "description": "A tiny climber sets out to reach a summit much taller than it first appears. Leap across matchbox huts, balance on wind-bent grass and use falling snowflakes as brief footholds.\n\nThe climb is divided into small camps. Explore around each one before moving on: a hidden spring or a sheltered tunnel can change the next ascent.",
+      "hash": "94d0013f40498551796dcd1262e40573fa2e53265ee116d4f306eea12333a9e9",
+      "region": [
+        "Japan"
+      ]
+    },
+    {
+      "platform": "SNES",
+      "image": "demo-26.sfc",
+      "title": "Wind Harbor",
+      "year": 1996,
+      "players": 1,
+      "genre": "Adventure",
+      "description": "Wind Harbor has lost the breeze that once powered its lifts and windmills. Travel between cliffside homes, repair the harbour's instruments and follow old sailors' clues to the source of the stillness.\n\nTools have more than one use. A repaired sail can carry a message, shelter a garden or open a route to a balcony that has been unreachable for years.",
+      "hash": "836866cd4bcdb4924c22f29ae02b20e3b2483b046b00f10b14a3ab2abdd1d84f",
+      "region": [
+        "Europe"
+      ]
+    },
+    {
+      "platform": "NES",
+      "image": "demo-27.nes",
+      "title": "Бумажный космос",
+      "year": 1997,
+      "players": 2,
+      "genre": "Arcade",
+      "description": "Бумажный кораблик взлетает со школьной парты и оказывается среди нарисованных планет. Облетайте скрепки, собирайте светящиеся точки и прячьтесь от ластика за краями тетрадных листов.\n\nКаждая страница задаёт новый маршрут. Клетки помогают держать курс, а поля оставляют место для опасного, но короткого обхода. Доберитесь до последнего разворота, пока рисунок не исчез.",
+      "hash": "97d20160fdd7f9845ffb76212e3c5b55c465c78bd1284a98e0d7963fbbe4cd97",
+      "region": []
+    },
+    {
+      "platform": "MD",
+      "image": "demo-28.md",
+      "title": "Ёжик и звёзды",
+      "year": 1998,
+      "players": 1,
+      "genre": "Platformer",
+      "description": "Маленький ёжик собирает звёзды, упавшие в ночной сад. Перепрыгивайте через ручьи, катайтесь на больших листьях и помогайте светлячкам зажечь дорожку к старой яблоне.\n\nНекоторые звёзды видны только в отражении пруда. Посмотрите на знакомое место с другой стороны, чтобы найти тайный проход. Когда корзинка наполнится, поднимитесь на холм и верните созвездия на небо.",
+      "hash": "5b67f1d9c31843d789dcdbd7b59baa2f6b75961ed2efb96135bea925c21fad1a",
+      "region": [
+        "Japan",
+        "USA",
+        "Europe"
+      ]
+    }
+  ]
+}

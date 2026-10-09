@@ -1,0 +1,24 @@
+{
+  "name": "ShanWan Twin USB Joystick",
+  "backend": "evdev",
+  "access": "read-only",
+  "match": {
+    "bus": "usb",
+    "vendor": "2563",
+    "product": "0555"
+  },
+  "buttons": {
+    "west": 291,
+    "east": 289,
+    "north": 288,
+    "south": 290,
+    "back": 296,
+    "start": 297
+  },
+  "axes": {
+    "left_stick_x": 0,
+    "left_stick_y": 1,
+    "dpad_x": 16,
+    "dpad_y": 17
+  }
+}
