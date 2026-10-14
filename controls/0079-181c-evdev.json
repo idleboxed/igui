@@ -1,0 +1,22 @@
+{
+  "name": "ShanWan Wireless Gamepad",
+  "backend": "evdev",
+  "access": "read-only",
+  "match": {
+    "bus": "usb",
+    "vendor": "0079",
+    "product": "181c"
+  },
+  "buttons": {
+    "west": 307,
+    "east": 305,
+    "north": 308,
+    "south": 304,
+    "back": 314,
+    "start": 315
+  },
+  "axes": {
+    "left_stick_x": 0,
+    "left_stick_y": 1
+  }
+}

@@ -164,10 +164,17 @@ Esc закрывает обычное окно; выход из шапки за�
 | [20bc-5500-evdev.json](../controls/20bc-5500-evdev.json) | `ShanWan Twin USB Joystick`, USB `20bc:5500` | evdev, клавиатурные коды кнопок |
 | [2563-0555-evdev.json](../controls/2563-0555-evdev.json) | `ShanWan Twin USB Joystick`, USB `2563:0555` | evdev, коды кнопок джойстика |
 | [2563-0555-hidraw.json](../controls/2563-0555-hidraw.json) | `ShanWan Twin USB Joystick`, USB `2563:0555` | hidraw, два канала одного приёмника |
+| [045e-028e-evdev.json](../controls/045e-028e-evdev.json) | `Microsoft X-Box 360 pad`, USB `045e:028e` | evdev, крестовина и левый грибок |
+| [0079-181c-evdev.json](../controls/0079-181c-evdev.json) | `ShanWan Wireless Gamepad`, USB `0079:181c` | evdev, направления левым грибком |
 
 На геймпадах приёмника `0810:0001` есть маркировка DataFrog.
 В документации этот комплект обозначен как **ShanWan Twin USB Joystick (DataFrog)**.
 Его системное имя — `HID 0810:0001`; оно сохранено в JSON для распознавания устройства.
+
+У `0079:181c` крестовина не назначена: для направлений используйте левый грибок.
+Лицевые X/B/Y/A, Back и Start назначены в обоих новых evdev-профилях.
+Правый грибок, курки, плечи, нажатия грибков и Guide не выполняют действий IGUI.
+Беспроводная форма корпуса Xbox сама по себе не означает identity Microsoft.
 
 Схема имени файла — `VID-PID-backend.json`. Выбор профиля зависит не от имени
 файла или модели платы, а от USB VID/PID, точного имени устройства и backend

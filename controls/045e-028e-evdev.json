@@ -1,0 +1,24 @@
+{
+  "name": "Microsoft X-Box 360 pad",
+  "backend": "evdev",
+  "access": "read-only",
+  "match": {
+    "bus": "usb",
+    "vendor": "045e",
+    "product": "028e"
+  },
+  "buttons": {
+    "west": 307,
+    "east": 305,
+    "north": 308,
+    "south": 304,
+    "back": 314,
+    "start": 315
+  },
+  "axes": {
+    "left_stick_x": 0,
+    "left_stick_y": 1,
+    "dpad_x": 16,
+    "dpad_y": 17
+  }
+}

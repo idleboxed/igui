@@ -107,9 +107,8 @@ pub fn control_bytes(name: &str) -> Vec<u8> {
 }
 
 pub fn evdev_profiles() -> Vec<imanlib::gamepad::profile::Profile> {
-    [EVDEV_20BC_5500_FILE, EVDEV_2563_0555_FILE].into_iter()
-        .map(|name| imanlib::gamepad::profile::Profile::parse(&control_bytes(name)).unwrap())
-        .collect()
+    let directory = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(igui::paths::CONTROLS_DIR);
+    imanlib::controls::load(&directory, None, None).unwrap().evdev
 }
 
 pub const HIDRAW_FILE: &str = "2563-0555-hidraw.json";

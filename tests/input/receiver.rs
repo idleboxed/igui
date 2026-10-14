@@ -67,7 +67,7 @@ impl Pad for Fixture {
 
     fn axes_state(&mut self) -> io::Result<BTreeMap<u8, i32>> {
         // These scenarios start neutral and contain no SYN_DROPPED packets.
-        Ok(BTreeMap::from([(0, 128), (1, 128), (16, 0), (17, 0)]))
+        Ok(self.info.abs_info.iter().map(|(&code, info)| (code, info[0])).collect())
     }
 }
 
@@ -82,9 +82,63 @@ impl Source for Fixture {
 }
 
 fn create_fixture(keyboard_codes: bool) -> (Rc<RefCell<VecDeque<Event>>>, Receiver<Fixture>) {
+    create_device_fixture(make_device_info(keyboard_codes))
+}
+
+fn create_device_fixture(info: DeviceInfo) -> (Rc<RefCell<VecDeque<Event>>>, Receiver<Fixture>) {
     let events = Rc::new(RefCell::new(VecDeque::new()));
-    let source = Fixture { info: make_device_info(keyboard_codes), events: events.clone() };
+    let source = Fixture { info, events: events.clone() };
     (events, Receiver::with_profiles(source, crate::common::evdev_profiles()))
+}
+
+// Capabilities and opening values come from stick reports read on 2026-10-14.
+// The packets below are synthetic, not a replay or a hardware verification.
+fn make_standard_device_info(wireless: bool) -> DeviceInfo {
+    let (name, vendor, product, axis_codes, key_codes, abs_info) = if wireless {
+        (
+            "ShanWan Wireless Gamepad", "0079", "181c",
+            vec![0, 1, 2, 5, 9, 10, 16, 17],
+            (304..=319).collect(),
+            BTreeMap::from([
+                (0, [127, 0, 255, 0, 15, 0]),
+                (1, [128, 0, 255, 0, 15, 0]),
+                (2, [127, 0, 255, 0, 15, 0]),
+                (5, [128, 0, 255, 0, 15, 0]),
+                (9, [0, 0, 255, 0, 15, 0]),
+                (10, [0, 0, 255, 0, 15, 0]),
+                (16, [0, -1, 1, 0, 0, 0]),
+                (17, [0, -1, 1, 0, 0, 0]),
+            ]),
+        )
+    } else {
+        (
+            "Microsoft X-Box 360 pad", "045e", "028e",
+            vec![0, 1, 2, 3, 4, 5, 16, 17],
+            vec![304, 305, 307, 308, 310, 311, 314, 315, 316, 317, 318],
+            BTreeMap::from([
+                (0, [-1536, -32768, 32767, 16, 128, 0]),
+                (1, [1535, -32768, 32767, 16, 128, 0]),
+                (2, [0, 0, 255, 0, 0, 0]),
+                (3, [0, -32768, 32767, 16, 128, 0]),
+                (4, [-1, -32768, 32767, 16, 128, 0]),
+                (5, [0, 0, 255, 0, 0, 0]),
+                (16, [0, -1, 1, 0, 0, 0]),
+                (17, [0, -1, 1, 0, 0, 0]),
+            ]),
+        )
+    };
+    DeviceInfo {
+        path: "/synthetic/event0".into(),
+        name: name.into(),
+        axis_codes,
+        key_codes,
+        abs_info,
+        identity: BTreeMap::from([
+            ("id/bustype".into(), "0003".into()),
+            ("id/vendor".into(), vendor.into()),
+            ("id/product".into(), product.into()),
+        ]),
+    }
 }
 
 fn poll(receiver: &mut Receiver<Fixture>) -> Buttons {
@@ -212,4 +266,60 @@ fn kernel_repetitions_do_not_repeat_menu_actions() {
     assert_eq!(navigation.poll(poll(&mut receiver), Duration::ZERO), [Favourite]);
     queue_packet(&events, make_event(1, 48, 2));
     assert!(navigation.poll(poll(&mut receiver), Duration::from_secs(1)).is_empty());
+}
+
+#[test]
+fn xbox_and_wireless_shanwan_profiles_map_measured_face_buttons() {
+    for wireless in [false, true] {
+        let (events, mut receiver) = create_device_fixture(make_standard_device_info(wireless));
+        arm_receiver(&events, &mut receiver, 304);
+
+        for (code, action) in [
+            (307, LowerFilters), (305, Favourite), (308, Filters),
+            (304, Activate), (314, Trash), (315, Start),
+        ] {
+            queue_tap(&events, code);
+            assert_eq!(poll(&mut receiver), super::held(action));
+            assert!(!poll(&mut receiver).any());
+        }
+        for code in [310, 311, 312, 313, 316, 317, 318] {
+            queue_tap(&events, code);
+        }
+        assert!(!poll(&mut receiver).any());
+    }
+}
+
+#[test]
+fn xbox_and_wireless_shanwan_profiles_navigate_using_their_measured_axis_ranges() {
+    for wireless in [false, true] {
+        let info = make_standard_device_info(wireless);
+        let ranges = info.abs_info.clone();
+        let (events, mut receiver) = create_device_fixture(info);
+        arm_receiver(&events, &mut receiver, 304);
+
+        for (code, range_position, action) in [(0, 1, Left), (0, 2, Right), (1, 1, Up), (1, 2, Down)] {
+            queue_packet(&events, make_event(3, code, ranges[&(code as u8)][range_position]));
+            assert_eq!(poll(&mut receiver), super::held(action));
+            queue_packet(&events, make_event(3, code, ranges[&(code as u8)][0]));
+            assert!(!poll(&mut receiver).any());
+        }
+        for (code, value, action) in [(16, -1, Left), (16, 1, Right), (17, -1, Up), (17, 1, Down)] {
+            queue_packet(&events, make_event(3, code, value));
+            // No hat events were measured for 0079:181c: its profile must not claim D-pad support.
+            assert_eq!(poll(&mut receiver), if wireless { Buttons::default() } else { super::held(action) });
+            queue_packet(&events, make_event(3, code, 0));
+            assert!(!poll(&mut receiver).any());
+        }
+        for code in if wireless { [2, 5, 9, 10] } else { [2, 3, 4, 5] } {
+            queue_packet(&events, make_event(3, code, ranges[&(code as u8)][2]));
+        }
+        assert!(!poll(&mut receiver).any());
+
+        if !wireless {
+            for (code, value) in [(0, -2304), (1, 3072), (0, -1536), (1, 1535)] {
+                queue_packet(&events, make_event(3, code, value));
+            }
+            assert!(!poll(&mut receiver).any());
+        }
+    }
 }
