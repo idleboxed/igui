@@ -24,6 +24,7 @@ pub fn read_from(path: &Path) -> Option<MemoryInfo> {
     imanlib::metrics::read_memory(path).ok()
 }
 
+/// Read bounded system memory information, returning None if unavailable or malformed.
 pub fn read() -> Option<MemoryInfo> {
     #[cfg(target_os = "linux")]
     return read_from(Path::new(crate::paths::MEMINFO_FILE));
@@ -51,6 +52,7 @@ impl MemoryMonitor {
         changed
     }
 
+    /// Return the latest memory sample retained by this monitor.
     pub fn info(&self) -> Option<MemoryInfo> {
         self.info
     }

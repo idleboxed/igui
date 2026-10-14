@@ -29,6 +29,7 @@ impl App {
         }
         self.refilter();
     }
+    /// Apply one logical action to menu state and return any explicit I/O effect for the runtime.
     pub fn dispatch(&mut self, action: Action) -> Effect {
         use Action::*;
         if self.input_test_active {
@@ -47,7 +48,7 @@ impl App {
                 _ => Effect::None,
             };
         }
-        let previous_game = self.selected.and_then(|i| self.visible.get(i).copied());
+        let previous_game = self.selected.and_then(|index_item| self.visible.get(index_item).copied());
         let was_search = self.search.is_some();
         match (self.focus, action) {
             (_, Filters) if was_search => self.toggle_search(),
@@ -144,11 +145,11 @@ impl App {
             (Focus::Header, Up | Down) => self.focus = self.right_focus(),
             (Focus::Header, Activate) => return Effect::Exit,
             (Focus::Games, Up) => match self.selected {
-                Some(i) if i > 0 => self.selected = Some(i - 1),
+                Some(index_item) if index_item > 0 => self.selected = Some(index_item - 1),
                 _ => self.focus = Focus::Platforms,
             },
             (Focus::Games, Down) => match self.selected {
-                Some(i) if i + 1 < self.visible.len() => self.selected = Some(i + 1),
+                Some(index_item) if index_item + 1 < self.visible.len() => self.selected = Some(index_item + 1),
                 _ => self.focus = Focus::LowerFilters,
             },
             (Focus::Games, Favourite) => {
@@ -185,7 +186,7 @@ impl App {
             _ => {}
         }
         if was_search != self.search.is_some()
-            || previous_game != self.selected.and_then(|i| self.visible.get(i).copied())
+            || previous_game != self.selected.and_then(|index_item| self.visible.get(index_item).copied())
         {
             self.update_description();
         }

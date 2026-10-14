@@ -1,5 +1,69 @@
 # Запуск и управление
 
+## Требования и сборка
+
+Нужны Linux, Rust 1.85 или новее, Cargo и `date`.
+Для оконного режима также нужны C-компилятор и X11/XWayland;
+для DRM — доступный DRM/KMS. Локальный IPC использует tmpfs.
+
+Cargo получает imanlib из Git-репозитория; точный коммит закреплён в
+[`Cargo.toml`](../Cargo.toml) и [`Cargo.lock`](../Cargo.lock).
+При первой сборке требуется доступ к GitHub и реестру зависимостей.
+После их загрузки возможна офлайн-сборка.
+
+Из каталога `igui` соберите оконный вариант:
+
+```sh
+cargo build --locked --release
+```
+
+Результат — `target/release/igui`. Эта команда не собирает iman или эмуляторы
+и не подготавливает игровой каталог.
+[Сборка для RK3032 и запуск через DRM](runtime.md#сборка-для-rk3032).
+
+## Быстрый запуск
+
+Поместите бинарник и ресурсы в один каталог:
+
+```sh
+mkdir -p out/system/igui
+cp target/release/igui out/system/igui/
+cp -R locales controls out/system/igui/
+./out/system/igui/igui --games /absolute/path/to/games
+```
+
+`--games` указывает каталог с готовым `catalogue.json`.
+IGUI не импортирует ROM и не сканирует игры вместо индекса.
+[Формат каталога и настроек](catalogue.md).
+
+`locales/` и `controls/` читаются рядом с исполняемым файлом.
+При обновлении не смешивайте прежние и новые копии одного профиля в `controls/`:
+дубли отключают соответствующий способ ввода.
+Русский интерфейс выбирается полем `"lang": "ru"` в `prefs.json`;
+без настроек используется английский.
+Справка по параметрам:
+
+```sh
+./out/system/igui/igui --help
+```
+
+Для запуска игр подготовьте комплект с iman:
+
+```text
+ROOT/
+├── system/
+│   ├── iman/{iman,iman.json,emulation.json}
+│   ├── igui/{igui,locales/,controls/}
+│   └── retroarch/{retroarch,cores/,padconf/}
+├── games/{catalogue.json,images/,thumbs/,states/,saves/}
+└── prefs.json
+```
+
+Запускайте `system/iman/iman`: менеджер откроет IGUI и вернёт меню после игры.
+Настройка эмуляторов описана в
+[документации iman](https://github.com/idleboxed/iman#быстрый-запуск).
+[Другие режимы запуска](runtime.md).
+
 ## Режимы запуска
 
 В самостоятельном режиме IGUI показывает каталог в окне X11 размером 1280×720:

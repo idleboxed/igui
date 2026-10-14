@@ -463,10 +463,10 @@ fn long_input_walk_never_loses_invariants() {
             ][seed as usize % 9],
         );
         assert_eq!(app.selected_game().is_none(), app.visible_count() == 0);
-        for i in 0..app.visible_count() {
-            let game = app.visible_game(i).unwrap();
-            assert!(app.letter_filter().is_none_or(|c| game.initial() == c));
-            assert!(app.platform_filter().is_none_or(|p| game.platform == p));
+        for index in 0..app.visible_count() {
+            let game = app.visible_game(index).unwrap();
+            assert!(app.letter_filter().is_none_or(|character| game.initial() == character));
+            assert!(app.platform_filter().is_none_or(|platform_item| game.platform == platform_item));
         }
     }
 }

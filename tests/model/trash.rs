@@ -47,7 +47,7 @@ fn lower(app: &mut App, field: FilterField, index: usize) {
 
 fn titles(app: &App) -> Vec<&str> {
     (0..app.visible_count())
-        .map(|i| app.visible_game(i).unwrap().title.as_str())
+        .map(|index_item| app.visible_game(index_item).unwrap().title.as_str())
         .collect()
 }
 

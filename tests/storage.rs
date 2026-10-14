@@ -290,28 +290,28 @@ fn first_trash_save_creates_preferences_without_any_other_files() {
 #[test]
 fn trash_load_keeps_array_order_and_deduplicates_without_rewriting() {
     let dir = Scratch::new();
-    let (a, b, c, absent) = (crate::common::hash("a"), crate::common::hash("b"), crate::common::hash("c"), crate::common::hash("absent"));
-    let original = json!({"favourites":[], "trash":[b, absent, a, b, c, a]}).to_string();
+    let (first_hash, second_hash, third_hash, absent) = (crate::common::hash("a"), crate::common::hash("b"), crate::common::hash("c"), crate::common::hash("absent"));
+    let original = json!({"favourites":[], "trash":[second_hash, absent, first_hash, second_hash, third_hash, first_hash]}).to_string();
     fs::write(dir.root().join("prefs.json"), &original).unwrap();
 
     let mut prefs = Preferences::load(dir.root()).unwrap();
 
-    assert_eq!(prefs.trash(), &[b.clone(), absent.clone(), a.clone(), c.clone()]);
+    assert_eq!(prefs.trash(), &[second_hash.clone(), absent.clone(), first_hash.clone(), third_hash.clone()]);
     assert_eq!(fs::read_to_string(dir.root().join("prefs.json")).unwrap(), original);
     fs::write(dir.root().join(".prefs.json.tmp"), b"other writer").unwrap();
-    prefs.save_trash(&a, true).unwrap(); // No duplicate and no promotion of an already trashed game.
+    prefs.save_trash(&first_hash, true).unwrap(); // No duplicate and no promotion of an already trashed game.
     prefs.save_trash(&crate::common::hash("missing"), false).unwrap();
     assert_eq!(fs::read_to_string(dir.root().join("prefs.json")).unwrap(), original);
     assert_eq!(fs::read(dir.root().join(".prefs.json.tmp")).unwrap(), b"other writer");
     fs::remove_file(dir.root().join(".prefs.json.tmp")).unwrap();
-    prefs.save_trash(&c, false).unwrap();
-    assert_eq!(dir.prefs()["trash"], json!([b, absent, a]));
-    prefs.save_trash(&c, true).unwrap(); // A restored game deleted again is now the newest.
-    assert_eq!(prefs.trash(), &[c.clone(), b.clone(), absent.clone(), a.clone()]);
-    assert_eq!(dir.prefs()["trash"], json!([c, b, absent, a]));
-    prefs.save_favourite(&a, true).unwrap();
-    prefs.save_current_item(&b).unwrap();
-    assert_eq!(dir.prefs()["trash"], json!([c, b, absent, a]));
+    prefs.save_trash(&third_hash, false).unwrap();
+    assert_eq!(dir.prefs()["trash"], json!([second_hash, absent, first_hash]));
+    prefs.save_trash(&third_hash, true).unwrap(); // A restored game deleted again is now the newest.
+    assert_eq!(prefs.trash(), &[third_hash.clone(), second_hash.clone(), absent.clone(), first_hash.clone()]);
+    assert_eq!(dir.prefs()["trash"], json!([third_hash, second_hash, absent, first_hash]));
+    prefs.save_favourite(&first_hash, true).unwrap();
+    prefs.save_current_item(&second_hash).unwrap();
+    assert_eq!(dir.prefs()["trash"], json!([third_hash, second_hash, absent, first_hash]));
     assert_eq!(Preferences::load(dir.root()).unwrap().trash(), prefs.trash());
 }
 
@@ -319,17 +319,17 @@ fn trash_load_keeps_array_order_and_deduplicates_without_rewriting() {
 fn failed_deletion_or_restoration_does_not_change_confirmed_trash_order() {
     for enabled in [false, true] {
         let dir = Scratch::new();
-        let a = crate::common::hash("a");
-        let b = crate::common::hash("b");
-        let original = json!({"favourites":[], "trash":[b, a]}).to_string();
+        let first_hash = crate::common::hash("a");
+        let second_hash = crate::common::hash("b");
+        let original = json!({"favourites":[], "trash":[second_hash, first_hash]}).to_string();
         fs::write(dir.root().join("prefs.json"), &original).unwrap();
         let mut prefs = Preferences::load(dir.root()).unwrap();
         fs::write(dir.root().join(".prefs.json.tmp"), b"other writer").unwrap();
-        let changed = if enabled { crate::common::hash("new") } else { b.clone() };
+        let changed = if enabled { crate::common::hash("new") } else { second_hash.clone() };
 
         assert!(prefs.save_trash(&changed, enabled).is_err());
 
-        assert_eq!(prefs.trash(), &[b, a]);
+        assert_eq!(prefs.trash(), &[second_hash, first_hash]);
         assert_eq!(fs::read_to_string(dir.root().join("prefs.json")).unwrap(), original);
         assert!(prefs.save_trash(&changed, enabled).is_err());
     }

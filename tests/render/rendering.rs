@@ -24,7 +24,7 @@ fn picture(app: &App, notice: Option<&str>) -> Vec<u32> {
 fn region_focus_moves_the_light_border_between_columns_and_header() {
     let mut app = App::new(sample_catalogue());
     let border = 0xe6eae7;
-    let pixel = |pixels: &[u32], x, y| pixels[y * WIDTH as usize + x];
+    let pixel = |pixels: &[u32], position_x, position_y| pixels[position_y * WIDTH as usize + position_x];
     let left = picture(&app, None);
     assert_eq!(pixel(&left, 16, 200), border);
     assert_ne!(pixel(&left, 15, 200), border);
@@ -127,24 +127,24 @@ fn only_platform_buttons_have_a_lighter_fill_and_controls_are_half_width() {
                     app.dispatch(action);
                 }
                 let pixels = picture(&app, None);
-                let pixel = |x, y| pixels[y * WIDTH as usize + x];
+                let pixel = |position_x, position_y| pixels[position_y * WIDTH as usize + position_x];
 
-                for y in [90, 91, 153, 154, 155] {
-                    for x in 82..620 {
-                        assert_eq!(pixel(x, y), 0x17202a);
+                for position_y in [90, 91, 153, 154, 155] {
+                    for position_x in 82..620 {
+                        assert_eq!(pixel(position_x, position_y), 0x17202a);
                     }
                 }
                 // 40px controls and 9px gaps; only system buttons remain 80px wide.
-                for (index, x) in [84, 133, 182].into_iter().enumerate() {
+                for (index, position_x) in [84, 133, 182].into_iter().enumerate() {
                     let background = if index == 0 && app.search().is_some() {
                         0x224841
                     } else {
                         0x121a23
                     };
-                    for col in x + 3..x + 37 {
+                    for col in position_x + 3..position_x + 37 {
                         assert_eq!(pixel(col, 119), background);
                     }
-                    assert_eq!(pixel(x + 43, 119), 0x17202a);
+                    assert_eq!(pixel(position_x + 43, 119), 0x17202a);
                 }
                 if app.platforms().is_empty() {
                     assert_eq!(pixel(235, 119), 0x17202a);
@@ -162,15 +162,15 @@ fn only_platform_buttons_have_a_lighter_fill_and_controls_are_half_width() {
 #[test]
 fn platform_overflow_indicators_follow_hidden_tabs_in_both_directions() {
     let games = (0..8)
-        .map(|i| crate::common::game(&format!("{i}.rom"), &format!("Game {i}"), &format!("P{i}")))
+        .map(|index_item| crate::common::game(&format!("{index_item}.rom"), &format!("Game {index_item}"), &format!("P{index_item}")))
         .collect();
     let mut app = App::new(games);
     app.dispatch(Up);
     let indicators = |app: &App| {
         let pixels = picture(app, None);
-        let lit = |x| {
-            (94..107).any(|y| {
-                pixels[y * WIDTH as usize + x..y * WIDTH as usize + x + 7].contains(&0x77cfb4)
+        let lit = |position_x| {
+            (94..107).any(|position_y| {
+                pixels[position_y * WIDTH as usize + position_x..position_y * WIDTH as usize + position_x + 7].contains(&0x77cfb4)
             })
         };
         (lit(585), lit(607))
@@ -189,7 +189,7 @@ fn platform_overflow_indicators_follow_hidden_tabs_in_both_directions() {
     assert_eq!(indicators(&app), (false, true));
     for count in [0, 1, 4] {
         let games = (0..count)
-            .map(|i| crate::common::game(&i.to_string(), "Game", &format!("P{i}")))
+            .map(|index_item| crate::common::game(&index_item.to_string(), "Game", &format!("P{index_item}")))
             .collect();
         assert_eq!(indicators(&App::new(games)), (false, false));
     }
@@ -378,7 +378,7 @@ fn game_card_places_localized_genre_and_region_on_the_same_row() {
             let region_offset = card::REGION_X - card::GENRE_X;
             let mut expected = Surface::new(width, height);
             expected.clear(Rgb888::new(18, 26, 35)).unwrap();
-            for (value, x, y, font, color) in [
+            for (value, position_x, position_y, font, color) in [
                 (
                     app.text("Genre"),
                     0,
@@ -410,7 +410,7 @@ fn game_card_places_localized_genre_and_region_on_the_same_row() {
             ] {
                 Text::with_baseline(
                     value,
-                    Point::new(x, y),
+                    Point::new(position_x, position_y),
                     MonoTextStyle::new(font, color),
                     Baseline::Top,
                 )
@@ -457,13 +457,13 @@ fn game_card_genre_and_region_have_equal_width_and_clip_long_values() {
     .draw(&mut expected)
     .unwrap();
     let value_y = (card::GENRE_LABEL_Y + card::VALUE_OFFSET) as usize;
-    for x in [card::GENRE_X as usize, card::REGION_X as usize] {
+    for position_x in [card::GENRE_X as usize, card::REGION_X as usize] {
         let actual: Vec<_> = pixels
             .chunks(WIDTH as usize)
             .skip(value_y)
             .take(20)
             .flat_map(|row| {
-                row[x..x + card::GENRE_REGION_WIDTH as usize]
+                row[position_x..position_x + card::GENRE_REGION_WIDTH as usize]
                     .iter()
                     .copied()
             })
@@ -532,13 +532,13 @@ fn description_scrolling_changes_only_its_viewport_and_scrollbar() {
         .iter()
         .zip(&second)
         .enumerate()
-        .filter_map(|(i, (a, b))| (a != b).then_some(i))
+        .filter_map(|(index_item, (first_item, second_item))| (first_item != second_item).then_some(index_item))
         .collect();
     assert!(!changed.is_empty());
-    for i in changed {
-        assert!((676..1240).contains(&(i % WIDTH as usize)));
+    for index_item in changed {
+        assert!((676..1240).contains(&(index_item % WIDTH as usize)));
         let top = card::DESCRIPTION_Y as usize;
-        assert!((top..top + card::DESCRIPTION_HEIGHT as usize).contains(&(i / WIDTH as usize)));
+        assert!((top..top + card::DESCRIPTION_HEIGHT as usize).contains(&(index_item / WIDTH as usize)));
     }
 }
 
@@ -556,13 +556,13 @@ fn image_filename_is_on_the_players_row() {
         .iter()
         .zip(&second)
         .enumerate()
-        .filter_map(|(i, (a, b))| (a != b).then_some(i))
+        .filter_map(|(index_item, (first_item, second_item))| (first_item != second_item).then_some(index_item))
         .collect();
     assert!(!changed.is_empty());
-    for i in changed {
-        assert!((916..1224).contains(&(i % WIDTH as usize)));
+    for index_item in changed {
+        assert!((916..1224).contains(&(index_item % WIDTH as usize)));
         let value_y = (card::FACTS_LABEL_Y + card::VALUE_OFFSET) as usize;
-        assert!((value_y..value_y + 13).contains(&(i / WIDTH as usize)));
+        assert!((value_y..value_y + 13).contains(&(index_item / WIDTH as usize)));
     }
 }
 
@@ -582,7 +582,7 @@ fn image_field_uses_small_font_is_localized_clipped_and_absent_below_description
         let height = card::VALUE_OFFSET as u32 + 13;
         let mut expected = Surface::new(324, height);
         expected.clear(Rgb888::new(18, 26, 35)).unwrap();
-        for (value, y, font, color) in [
+        for (value, position_y, font, color) in [
             (app.text("Image"), 0, &FONT_7X13, Rgb888::new(151, 169, 174)),
             (
                 "12345678901234567890123456789012345678901...",
@@ -593,7 +593,7 @@ fn image_field_uses_small_font_is_localized_clipped_and_absent_below_description
         ] {
             Text::with_baseline(
                 value,
-                Point::new(0, y),
+                Point::new(0, position_y),
                 MonoTextStyle::new(font, color),
                 Baseline::Top,
             )
@@ -721,11 +721,11 @@ fn long_game_titles_stay_in_one_card_row_without_abbreviation() {
             .skip(value_y).take(20)
             .flat_map(|row| row[676..1216].iter().copied()).collect();
         assert_eq!(actual, expected.pixels());
-        for y in card::TOP as usize..card::BOTTOM as usize {
-            for x in 656..1252 {
-                if !(value_y..value_y + 20).contains(&y) || !(676..1216).contains(&x) {
-                    let i = y * WIDTH as usize + x;
-                    assert_eq!(pixels[i], baseline[i]);
+        for position_y in card::TOP as usize..card::BOTTOM as usize {
+            for position_x in 656..1252 {
+                if !(value_y..value_y + 20).contains(&position_y) || !(676..1216).contains(&position_x) {
+                    let index_item = position_y * WIDTH as usize + position_x;
+                    assert_eq!(pixels[index_item], baseline[index_item]);
                 }
             }
         }
@@ -747,12 +747,12 @@ fn free_space_changes_only_the_right_side_of_the_footer() {
         .iter()
         .zip(&known)
         .enumerate()
-        .filter_map(|(i, (a, b))| (a != b).then_some(i))
+        .filter_map(|(index_item, (first_item, second_item))| (first_item != second_item).then_some(index_item))
         .collect();
     assert!(!changed.is_empty());
-    for i in changed {
-        assert!((igui::render::FOOTER_STATS_X as usize..1256).contains(&(i % WIDTH as usize)));
-        assert!((696..709).contains(&(i / WIDTH as usize)));
+    for index_item in changed {
+        assert!((igui::render::FOOTER_STATS_X as usize..1256).contains(&(index_item % WIDTH as usize)));
+        assert!((696..709).contains(&(index_item / WIDTH as usize)));
     }
     app.set_available_bytes(Some(0));
     assert_ne!(unknown, picture(&app, None));
@@ -783,12 +783,12 @@ fn favourite_star_is_confined_to_the_right_edge_and_clears_when_removed() {
         .iter()
         .zip(&starred)
         .enumerate()
-        .filter_map(|(i, (a, b))| (a != b).then_some(i))
+        .filter_map(|(index_item, (first_item, second_item))| (first_item != second_item).then_some(index_item))
         .collect();
     assert!(changed.len() > 30);
-    for i in changed {
-        assert!((590..603).contains(&(i % WIDTH as usize)));
-        assert!((186..199).contains(&(i / WIDTH as usize)));
+    for index_item in changed {
+        assert!((590..603).contains(&(index_item % WIDTH as usize)));
+        assert!((186..199).contains(&(index_item / WIDTH as usize)));
     }
     app.set_favourites(Default::default());
     assert_eq!(first, picture(&app, None));
@@ -886,9 +886,9 @@ fn all_sample_games_and_focus_regions_render() {
 #[test]
 fn dropup_is_clipped_to_left_column_and_scrolls_to_all_genres() {
     let games = (0..12)
-        .map(|i| {
-            let mut game = crate::common::game(&format!("{i}.rom"), &format!("Game {i:02}"), "MD");
-            game.genre = Some(format!("Genre {i:02}"));
+        .map(|index_item| {
+            let mut game = crate::common::game(&format!("{index_item}.rom"), &format!("Game {index_item:02}"), "MD");
+            game.genre = Some(format!("Genre {index_item:02}"));
             game
         })
         .collect();
@@ -899,11 +899,11 @@ fn dropup_is_clipped_to_left_column_and_scrolls_to_all_genres() {
     app.dispatch(Activate);
     let open = picture(&app, None);
     assert_ne!(open, closed);
-    for (i, (a, b)) in open.iter().zip(&closed).enumerate() {
-        if a != b {
-            let (x, y) = (i % WIDTH as usize, i / WIDTH as usize);
+    for (index_item, (first_item, second_item)) in open.iter().zip(&closed).enumerate() {
+        if first_item != second_item {
+            let (position_x, position_y) = (index_item % WIDTH as usize, index_item / WIDTH as usize);
             assert!(
-                ((270..612).contains(&x) && (412..592).contains(&y)) || (696..709).contains(&y)
+                ((270..612).contains(&position_x) && (412..592).contains(&position_y)) || (696..709).contains(&position_y)
             );
         }
     }
@@ -942,7 +942,7 @@ fn launch_dialog_places_full_system_name_above_the_localized_loading_message() {
         let mut surface = Surface::new(WIDTH, HEIGHT);
         crate::common::renderer().draw(&app, None, &mut surface).unwrap();
         draw_launch_dialog(&app, &dialog, &mut surface).unwrap();
-        for (value, y, color) in [
+        for (value, position_y, color) in [
             ("Sega Mega Drive / Genesis", 336, Rgb888::new(230, 234, 231)),
             (message, 360, Rgb888::new(119, 207, 180)),
         ] {
@@ -959,11 +959,11 @@ fn launch_dialog_places_full_system_name_above_the_localized_loading_message() {
             let actual: Vec<_> = surface
                 .pixels()
                 .chunks(WIDTH as usize)
-                .skip(y)
+                .skip(position_y)
                 .take(20)
                 .flat_map(|row| row[201..1079].iter().copied())
                 .collect();
-            assert_eq!(actual, expected.pixels(), "{language}, row at {y}");
+            assert_eq!(actual, expected.pixels(), "{language}, row at {position_y}");
         }
     }
 }
@@ -983,7 +983,7 @@ fn trash_dialog_shows_localized_question_and_a_b_answers() {
         let mut surface = Surface::new(WIDTH, HEIGHT);
         crate::common::renderer().draw(&app, None, &mut surface).unwrap();
         igui::render::draw_trash_dialog(&app, &mut surface).unwrap();
-        for (value, y, color) in [
+        for (value, position_y, color) in [
             (question, 336, Rgb888::new(230, 234, 231)),
             (answers, 360, Rgb888::new(119, 207, 180)),
         ] {
@@ -998,8 +998,8 @@ fn trash_dialog_shows_localized_question_and_a_b_answers() {
             .draw(&mut expected)
             .unwrap();
             let actual: Vec<_> = surface.pixels().chunks(WIDTH as usize)
-                .skip(y).take(20).flat_map(|row| row[201..1079].iter().copied()).collect();
-            assert_eq!(actual, expected.pixels(), "{language}, row at {y}");
+                .skip(position_y).take(20).flat_map(|row| row[201..1079].iter().copied()).collect();
+            assert_eq!(actual, expected.pixels(), "{language}, row at {position_y}");
         }
     }
 }
@@ -1020,10 +1020,10 @@ fn launch_dialog_is_an_opaque_centered_panel_above_the_existing_menu() {
             assert_ne!(before, surface.pixels());
             assert_eq!(surface.pixels()[360 * WIDTH as usize + 200], 0xe6eae7);
             assert_ne!(surface.pixels()[360 * WIDTH as usize + 201], 0xe6eae7);
-            for (i, (a, b)) in before.iter().zip(surface.pixels()).enumerate() {
-                if a != b {
-                    assert!((200..1088).contains(&(i % WIDTH as usize)));
-                    assert!((232..496).contains(&(i / WIDTH as usize)));
+            for (index_item, (first_item, second_item)) in before.iter().zip(surface.pixels()).enumerate() {
+                if first_item != second_item {
+                    assert!((200..1088).contains(&(index_item % WIDTH as usize)));
+                    assert!((232..496).contains(&(index_item / WIDTH as usize)));
                 }
             }
             renderer.draw(&app, None, &mut surface).unwrap();
@@ -1035,7 +1035,7 @@ fn launch_dialog_is_an_opaque_centered_panel_above_the_existing_menu() {
 fn numbered_catalogue(count: usize) -> App {
     App::new(
         (1..=count)
-            .map(|i| crate::common::game(&format!("fixture-{i}"), &format!("Game {i:04}"), "MD"))
+            .map(|index_item| crate::common::game(&format!("fixture-{index_item}"), &format!("Game {index_item:04}"), "MD"))
             .collect(),
     )
 }
@@ -1056,13 +1056,13 @@ fn assert_row_number(pixels: &[u32], row: usize, number: usize, digits: usize, s
         .unwrap();
     let significant = number.to_string();
     let padding = digits - significant.len();
-    for (value, x, color) in [
+    for (value, position_x, color) in [
         ("0".repeat(padding), 0, Rgb888::new(89, 108, 117)),
         (significant, padding as i32 * 7, Rgb888::new(89, 108, 117)),
     ] {
         Text::with_baseline(
             &value,
-            Point::new(x, 0),
+            Point::new(position_x, 0),
             MonoTextStyle::new(&FONT_7X13, color),
             Baseline::Top,
         )
@@ -1188,7 +1188,7 @@ fn platform_header_uses_a_vertical_separator_in_both_languages() {
 
 #[test]
 fn trash_button_is_next_to_the_star_and_stays_highlighted_without_focus() {
-    let pixel = |pixels: &[u32], x: usize, y: usize| pixels[y * WIDTH as usize + x];
+    let pixel = |pixels: &[u32], position_x: usize, position_y: usize| pixels[position_y * WIDTH as usize + position_x];
     let mut app = App::new(vec![crate::common::game("a", "Amber", "MD")]);
     app.set_trash([crate::common::hash("a")].into());
     for action in [Filters, Right, Right] {
@@ -1319,12 +1319,12 @@ fn memory_updates_only_its_reserved_cell_without_reflowing_hints_or_reading_prev
     ] {
         app.set_memory(memory);
         renderer.draw(&app, None, &mut surface).unwrap();
-        for (i, (&before, &after)) in original.iter().zip(surface.pixels()).enumerate() {
+        for (index_item, (&before, &after)) in original.iter().zip(surface.pixels()).enumerate() {
             if before != after {
                 // Default disk label is "Disk: - GB" (10 cells), followed by 16 px gap.
-                assert!((FOOTER_STATS_X as usize..1170).contains(&(i % WIDTH as usize)));
+                assert!((FOOTER_STATS_X as usize..1170).contains(&(index_item % WIDTH as usize)));
                 assert!((FOOTER_Y as usize + 12..FOOTER_Y as usize + 25)
-                    .contains(&(i / WIDTH as usize)));
+                    .contains(&(index_item / WIDTH as usize)));
             }
         }
     }
@@ -1336,16 +1336,16 @@ fn power_icon_stays_compact_with_a_red_circle_and_one_pixel_focus_frame() {
     let mut app = App::new(sample_catalogue());
     app.set_locales(Locales::new(Locale::parse("ru", b"{}").unwrap()));
     let normal = picture(&app, None);
-    let pixel = |pixels: &[u32], x, y| pixels[y * WIDTH as usize + x];
-    for x in 1186..1216 {
-        assert_eq!(pixel(&normal, x, 42), 0x17202a);
+    let pixel = |pixels: &[u32], position_x, position_y| pixels[position_y * WIDTH as usize + position_x];
+    for position_x in 1186..1216 {
+        assert_eq!(pixel(&normal, position_x, 42), 0x17202a);
     }
     assert_eq!(pixel(&normal, 1232, 35), 0xf05050);
     assert_eq!(pixel(&normal, 1232, 48), 0xf05050);
-    for y in 30..54 {
-        for x in 1216..1248 {
-            if pixel(&normal, x, y) == 0xf05050 {
-                assert!((1226..1238).contains(&x) && (35..49).contains(&y));
+    for position_y in 30..54 {
+        for position_x in 1216..1248 {
+            if pixel(&normal, position_x, position_y) == 0xf05050 {
+                assert!((1226..1238).contains(&position_x) && (35..49).contains(&position_y));
             }
         }
     }
@@ -1370,10 +1370,10 @@ fn multiline_notice_stays_inside_its_panel_and_displays_the_last_line() {
 
     for (index, (before, after)) in empty.iter().zip(&filled).enumerate() {
         if before != after {
-            let x = index % WIDTH as usize;
-            let y = index / WIDTH as usize;
-            assert!((684..1236).contains(&x) && (first_y..bottom).contains(&y));
-            last_line_visible |= y >= last_y;
+            let position_x = index % WIDTH as usize;
+            let position_y = index / WIDTH as usize;
+            assert!((684..1236).contains(&position_x) && (first_y..bottom).contains(&position_y));
+            last_line_visible |= position_y >= last_y;
         }
     }
     assert!(last_line_visible);
@@ -1395,8 +1395,8 @@ fn error_notice_uses_a_muted_red_panel_in_card_search_and_empty_catalogue() {
                 let pixels = picture(&app, Some(&notice));
                 let panel_top = (card::DESCRIPTION_Y - 1) as usize;
                 let panel_bottom = (card::DESCRIPTION_Y + card::DESCRIPTION_HEIGHT as i32) as usize;
-                for y in panel_top..panel_bottom {
-                    assert_eq!(pixels[y * WIDTH as usize + 674], error_color);
+                for position_y in panel_top..panel_bottom {
+                    assert_eq!(pixels[position_y * WIDTH as usize + 674], error_color);
                 }
                 assert!(pixels.chunks(WIDTH as usize)
                     .skip(card::DESCRIPTION_Y as usize).take(card::DESCRIPTION_HEIGHT as usize)
@@ -1407,10 +1407,10 @@ fn error_notice_uses_a_muted_red_panel_in_card_search_and_empty_catalogue() {
                     .any(|row| row[684..1236].contains(&0xe6eae7)));
                 for (index, (before, after)) in plain.iter().zip(&pixels).enumerate() {
                     if before != after {
-                        let x = index % WIDTH as usize;
-                        let y = index / WIDTH as usize;
+                        let position_x = index % WIDTH as usize;
+                        let position_y = index / WIDTH as usize;
                         // The description scrollbar at x=1236..1239 is cleared as well.
-                        assert!((672..1239).contains(&x) && (panel_top..panel_bottom).contains(&y));
+                        assert!((672..1239).contains(&position_x) && (panel_top..panel_bottom).contains(&position_y));
                     }
                 }
             }

@@ -14,6 +14,7 @@ pub(crate) enum Mode {
     Probe,
 }
 
+/// Capture the supplied surface in a checked destination and return its IPC outcome.
 pub(crate) fn screenshot(
     request: Request,
     socket: &Path,

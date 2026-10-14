@@ -1,4 +1,5 @@
 //! Display names only, not an emulator support list or a source of filter tabs.
+/// Expand a known platform code to its display name, preserving unknown codes.
 pub fn full_name(alias: &str) -> &str {
     match alias {
         "NES" | "FC" => "Nintendo Entertainment System",

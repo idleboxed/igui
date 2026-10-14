@@ -80,11 +80,11 @@ fn launch(
             let polled = server.poll(peer, Some(pid));
             assert!(polled.errors.is_empty(), "{:?}", polled.errors);
             for incoming in polled.incoming {
-                let r = &incoming.request;
-                let response = match r.command.as_str() {
+                let response_item = &incoming.request;
+                let response = match response_item.command.as_str() {
                     "igui.bootstrap" => {
                         peer = Some(incoming.peer);
-                        Response::done(r.id, serde_json::to_value(Bootstrap {
+                        Response::done(response_item.id, serde_json::to_value(Bootstrap {
                             root: root.clone(), state: state.clone(), notice: None,
                             preferences_writable: writable, diag_display: false,
                             diag_input: false, input_test: false,
@@ -92,27 +92,27 @@ fn launch(
                     }
                     "igui.prepare_launch" => {
                         assert!(prepared.is_none());
-                        let game: LaunchRequest = serde_json::from_value(r.params.clone()).unwrap();
+                        let game: LaunchRequest = serde_json::from_value(response_item.params.clone()).unwrap();
                         let prefs = match fs::read(root.join("prefs.json")) {
                             Ok(bytes) => Some(bytes),
                             Err(error) if error.kind() == std::io::ErrorKind::NotFound => None,
                             Err(error) => panic!("{error}"),
                         };
                         prepared = Some((game, prefs));
-                        Response::done(r.id, json!({}))
+                        Response::done(response_item.id, json!({}))
                     }
                     "igui.handoff" => {
-                        let handoff: Handoff = serde_json::from_value(r.params.clone()).unwrap();
+                        let handoff: Handoff = serde_json::from_value(response_item.params.clone()).unwrap();
                         assert_eq!(handoff.game, prepared.as_ref().unwrap().0);
                         handed_off = true;
-                        Response::done(r.id, json!({}))
+                        Response::done(response_item.id, json!({}))
                     }
                     _ => {
                         if let Some(peer) = peer {
                             server.forward(peer, &incoming).unwrap();
                         } else {
                             server.send(incoming.peer, &Message::Response(Response::error(
-                                r.id, "not_ready", "bootstrap pending",
+                                response_item.id, "not_ready", "bootstrap pending",
                             ))).unwrap();
                         }
                         continue;

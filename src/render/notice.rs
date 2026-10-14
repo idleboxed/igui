@@ -3,11 +3,13 @@
 use crate::{model::description, locales::Locales};
 use super::{card, fill, rectangle, text, App, DrawTarget, Rgb888, ERROR_BG, TEXT};
 
+/// Build a user-visible game-launch failure notice.
 pub fn launch_failed(reason: &str) -> String {
     let reason = reason.strip_prefix("launch_refused: ").unwrap_or(reason);
     format!("Cannot launch game.\n{reason}")
 }
 
+/// Sanitize and wrap a notice into bounded display lines.
 pub fn lines(locales: &Locales, message: &str, columns: usize) -> Vec<String> {
     // A bare ENOENT carries no component identity. Improve the visible wording,
     // without guessing which file is missing or changing the original diagnostic.
@@ -25,7 +27,7 @@ pub fn lines(locales: &Locales, message: &str, columns: usize) -> Vec<String> {
     });
     let message = rewritten.as_deref().unwrap_or(message);
     let clean: String = message.chars().take(2048)
-        .map(|c| if c.is_control() && c != '\n' { ' ' } else { c }).collect();
+        .map(|character| if character.is_control() && character != '\n' { ' ' } else { character }).collect();
     let translated = clean.lines().map(|line| {
         for (prefix, label) in [
             ("Required BIOS missing: ", "Required BIOS missing:"),
@@ -44,13 +46,14 @@ pub fn lines(locales: &Locales, message: &str, columns: usize) -> Vec<String> {
 }
 
 // Shared placement gives notices the same six-line area in the card and search.
+/// Draw the bounded notice panel inside its available area.
 pub(super) fn draw<D: DrawTarget<Color = Rgb888>>(
-    d: &mut D,
+    device: &mut D,
     app: &App,
     message: &str,
 ) -> Result<(), D::Error> {
     fill(
-        d,
+        device,
         rectangle(672, card::DESCRIPTION_Y - 1, 564, card::DESCRIPTION_HEIGHT + 1),
         ERROR_BG,
     )?;
@@ -59,7 +62,7 @@ pub(super) fn draw<D: DrawTarget<Color = Rgb888>>(
     let padding = (card::DESCRIPTION_HEIGHT - rows * card::DESCRIPTION_LINE_HEIGHT).min(12);
     for (row, line) in lines.iter().take(description::ROWS).enumerate() {
         text(
-            d,
+            device,
             line,
             684,
             card::DESCRIPTION_Y + padding as i32

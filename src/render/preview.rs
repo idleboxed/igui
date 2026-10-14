@@ -23,12 +23,12 @@ impl Picture {
             });
         }
         let mut surface = imanlib::surface::Surface::new(scaled_width, scaled_height);
-        let colors = (0..scaled_height).flat_map(|y| {
-            (0..scaled_width).map(move |x| {
-                let i = ((y as usize * height / scaled_height as usize) * width
-                    + x as usize * width / scaled_width as usize)
+        let colors = (0..scaled_height).flat_map(|position_y| {
+            (0..scaled_width).map(move |position_x| {
+                let index = ((position_y as usize * height / scaled_height as usize) * width
+                    + position_x as usize * width / scaled_width as usize)
                     * 3;
-                Rgb888::new(rgb[i], rgb[i + 1], rgb[i + 2])
+                Rgb888::new(rgb[index], rgb[index + 1], rgb[index + 2])
             })
         });
         let _ = surface.fill_contiguous(&surface.bounding_box(), colors);
@@ -84,13 +84,14 @@ impl Renderer {
             self.cached_kind = Some(game.preview.clone());
         }
     }
+    /// Draw or reuse the selected preview, falling back when image bytes are unavailable or invalid.
     pub(super) fn preview<D: DrawTarget<Color = Rgb888>>(
         &mut self,
         app: &App,
-        d: &mut D,
+        device: &mut D,
     ) -> Result<(), D::Error> {
         fill(
-            d,
+            device,
             rectangle(
                 656,
                 card::PREVIEW_TOP,
@@ -102,7 +103,7 @@ impl Renderer {
         self.prepare_selected(app);
         let Some(_) = app.selected_game() else {
             text(
-                d,
+                device,
                 app.text("No game selected"),
                 862,
                 card::PREVIEW_LABEL_Y,
@@ -116,13 +117,13 @@ impl Renderer {
                 let colors = surface
                     .pixels()
                     .iter()
-                    .map(|&p| Rgb888::new((p >> 16) as u8, (p >> 8) as u8, p as u8));
-                d.fill_contiguous(&Rectangle::new(picture.position, surface.size()), colors)?;
+                    .map(|&pixel| Rgb888::new((pixel >> 16) as u8, (pixel >> 8) as u8, pixel as u8));
+                device.fill_contiguous(&Rectangle::new(picture.position, surface.size()), colors)?;
             }
         } else {
             let label = app.text("No image");
             text(
-                d,
+                device,
                 label,
                 954 - label.chars().count() as i32 * 5,
                 card::PREVIEW_LABEL_Y,

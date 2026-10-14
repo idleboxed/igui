@@ -10,12 +10,72 @@ use std::{
     path::{Path, PathBuf},
     process::{Command, Output, Stdio},
     sync::{
-        atomic::{AtomicBool, Ordering},
+        atomic::{AtomicBool, AtomicU64, Ordering},
         Arc,
     },
     thread,
     time::{Duration, Instant},
 };
+
+/// In-process headless runtime with a manually advanced UI clock; IPC stays real.
+pub struct ClockedSession {
+    pub client: Client,
+    clock: Arc<AtomicU64>,
+    worker: Option<thread::JoinHandle<Result<(), String>>>,
+}
+
+impl ClockedSession {
+    pub fn start(mut config: igui::runtime::Config) -> io::Result<Self> {
+        let socket = config.ipc_socket.as_ref().expect("clocked fixture needs IPC");
+        let client = Client::connect(socket)?;
+        config.display.headless = true;
+        // A failed test must still reclaim its worker if the host cannot deliver close.
+        config.frames = Some(5_000);
+        let clock = Arc::new(AtomicU64::new(0));
+        let task_clock = clock.clone();
+        let worker = thread::spawn(move || {
+            igui::runtime::run_with_clock(config, || {
+                Duration::from_millis(task_clock.load(Ordering::Relaxed))
+            }).map_err(|error| error.to_string())
+        });
+        Ok(Self { client, clock, worker: Some(worker) })
+    }
+
+    pub fn set_time(&self, milliseconds: u64) {
+        self.clock.store(milliseconds, Ordering::Relaxed);
+    }
+
+    pub fn wait_status(&mut self, matches: impl Fn(&serde_json::Value) -> bool) -> serde_json::Value {
+        let deadline = Instant::now() + Duration::from_secs(5);
+        loop {
+            if let Ok(status) = self.client.value("igui.status", json!({})) {
+                if matches(&status) {
+                    return status;
+                }
+            }
+            assert!(!self.worker.as_ref().unwrap().is_finished(), "runtime exited before the expected status");
+            assert!(Instant::now() < deadline, "runtime did not deliver the expected status");
+            thread::yield_now();
+        }
+    }
+
+    pub fn finish(mut self) {
+        self.worker.take().unwrap().join().unwrap().unwrap();
+    }
+}
+
+impl Drop for ClockedSession {
+    fn drop(&mut self) {
+        if let Some(worker) = self.worker.take() {
+            if !worker.is_finished() {
+                let _ = self.client.value("igui.close", json!({}));
+            }
+            if !matches!(worker.join(), Ok(Ok(()))) {
+                eprintln!("IGUI fixture runtime failed during cleanup");
+            }
+        }
+    }
+}
 
 pub struct Driver {
     command: Command,
@@ -102,7 +162,7 @@ impl Driver {
         let mut running = self.start()?;
         running.wait_ready()?;
         let mut closing = false;
-        for action in self.actions.split(',').filter(|a| !a.is_empty()) {
+        for action in self.actions.split(',').filter(|action_item| !action_item.is_empty()) {
             let result = running
                 .client
                 .value("igui.input", json!({"action":action}))?;

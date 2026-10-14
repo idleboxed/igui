@@ -48,13 +48,13 @@ fn real_gui_reports_only_when_requested_and_rejected_diagnostics_do_not_prevent_
             assert!(polled.errors.is_empty(), "{:?}", polled.errors);
             for incoming in polled.incoming {
                 assert_eq!(incoming.pid, child.id());
-                let r = incoming.request;
-                let response = match r.command.as_str() {
+                let report = incoming.request;
+                let response = match report.command.as_str() {
                     "igui.bootstrap" => {
                         assert!(peer.is_none());
                         peer = Some(incoming.peer);
                         Response::done(
-                            r.id,
+                            report.id,
                             serde_json::to_value(Bootstrap {
                                 diag_display: requested,
                                 diag_input: requested,
@@ -69,9 +69,9 @@ fn real_gui_reports_only_when_requested_and_rejected_diagnostics_do_not_prevent_
                     }
                     "diag_display.submit" | "diag_input.submit" => {
                         assert!(requested);
-                        if r.command == "diag_display.submit" {
+                        if report.command == "diag_display.submit" {
                             let sample: imanlib::display_metrics::Sample =
-                                serde_json::from_value(r.params).unwrap();
+                                serde_json::from_value(report.params).unwrap();
                             assert!(sample.validate());
                             assert_eq!(sample.backend, imanlib::display_metrics::Backend::Headless);
                             assert!(sample.kms.is_none());
@@ -79,7 +79,7 @@ fn real_gui_reports_only_when_requested_and_rejected_diagnostics_do_not_prevent_
                             assert!(sample.render.is_some());
                         } else {
                             let sample: imanlib::input_metrics::Sample =
-                                serde_json::from_value(r.params).unwrap();
+                                serde_json::from_value(report.params).unwrap();
                             assert!(sample.validate() && sample.headless);
                             assert_eq!(
                                 sample.evdev.connections
@@ -88,16 +88,16 @@ fn real_gui_reports_only_when_requested_and_rejected_diagnostics_do_not_prevent_
                                 0
                             );
                         }
-                        reports.push(r.command);
+                        reports.push(report.command);
                         if refuse {
-                            Response::error(r.id, "invalid_state", "synthetic stopped collector")
+                            Response::error(report.id, "invalid_state", "synthetic stopped collector")
                         } else {
-                            Response::done(r.id, json!({"received":true}))
+                            Response::done(report.id, json!({"received":true}))
                         }
                     }
                     "igui.closed" => {
                         closed = true;
-                        Response::done(r.id, json!({}))
+                        Response::done(report.id, json!({}))
                     }
                     command => panic!("unexpected command {command}"),
                 };

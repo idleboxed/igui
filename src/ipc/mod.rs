@@ -34,9 +34,11 @@ pub struct Managed {
     closing: bool,
 }
 impl Managed {
+    /// Connect to iman and read this managed GUI session's bootstrap settings.
     pub fn connect(path: &Path) -> io::Result<Self> {
         Self::open(path, true)
     }
+    /// Register a standalone GUI with its authorized IPC test host.
     pub fn attach(path: &Path) -> io::Result<Self> {
         Self::open(path, false)
     }
@@ -59,12 +61,15 @@ impl Managed {
             closing: false,
         })
     }
+    /// Take the next forwarded GUI-control request, if one has arrived.
     pub fn take_request(&mut self) -> Option<Request> {
         self.client.take_request()
     }
+    /// Queue a processed GUI command's actual outcome.
     pub fn reply(&mut self, response: Response) -> io::Result<()> {
         self.client.reply(response)
     }
+    /// Request preparation of one selected game when no handoff is already pending.
     pub fn prepare(&mut self, game: LaunchRequest) -> io::Result<()> {
         if self.pending.is_none() && !self.ready && !self.closing && !self.handed_off {
             let id = self
@@ -74,6 +79,7 @@ impl Managed {
         }
         Ok(())
     }
+    /// Request game handoff only after iman has confirmed preparation.
     pub fn handoff(&mut self, value: Handoff) -> io::Result<()> {
         if self.ready && self.pending.is_none() && !self.closing && !self.handed_off {
             let id = self
@@ -83,6 +89,7 @@ impl Managed {
         }
         Ok(())
     }
+    /// Process IPC outcomes and close events without blocking the frame loop.
     pub fn poll(&mut self) -> io::Result<Update> {
         let mut update = Update::Waiting;
         if let Some(response) = self.client.poll()? {
@@ -124,7 +131,7 @@ impl Managed {
         if self
             .pending
             .as_ref()
-            .is_some_and(|(_, _, t)| t.elapsed() > Duration::from_secs(5))
+            .is_some_and(|(_, _, pending_started)| pending_started.elapsed() > Duration::from_secs(5))
         {
             return Err(io::Error::new(
                 io::ErrorKind::TimedOut,
@@ -139,7 +146,7 @@ impl Managed {
     }
     /// Transfers ownership, not a journal. The host must reap this process first.
     pub fn start_input_test(&mut self) -> io::Result<()> {
-        if !self.bootstrap.as_ref().is_some_and(|b| b.input_test)
+        if !self.bootstrap.as_ref().is_some_and(|bootstrap| bootstrap.input_test)
             || self.pending.is_some() || self.ready || self.closing || self.handed_off {
             return Err(io::Error::other("Input test handoff is not available"));
         }
@@ -149,15 +156,16 @@ impl Managed {
     }
     /// Best-effort diagnostics are sent only after rendering/input work has stopped.
     pub fn display_report(&mut self, sample: &imanlib::display_metrics::Sample) -> io::Result<()> {
-        if self.bootstrap.as_ref().is_some_and(|b| b.diag_display) {
+        if self.bootstrap.as_ref().is_some_and(|bootstrap| bootstrap.diag_display) {
             self.drain_pending()?;
             self.client
                 .value("diag_display.submit", serde_json::to_value(sample)?)?;
         }
         Ok(())
     }
+    /// Send best-effort input diagnostics after pending GUI operations have settled.
     pub fn input_report(&mut self, sample: &imanlib::input_metrics::Sample) -> io::Result<()> {
-        if self.bootstrap.as_ref().is_some_and(|b| b.diag_input) {
+        if self.bootstrap.as_ref().is_some_and(|bootstrap| bootstrap.diag_input) {
             self.drain_pending()?;
             self.client
                 .value("diag_input.submit", serde_json::to_value(sample)?)?;

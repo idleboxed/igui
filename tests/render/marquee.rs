@@ -26,7 +26,7 @@ use {
     imanlib::surface::Surface,
 };
 use serde_json::json;
-use std::{cell::Cell, fs, path::Path, rc::Rc, thread, time::Duration};
+use std::{cell::Cell, fs, path::Path, rc::Rc, sync::{Arc, atomic::{AtomicBool, Ordering}}, thread, time::Duration};
 
 fn ms(value: u64) -> Duration {
     Duration::from_millis(value)
@@ -131,10 +131,10 @@ fn reference(app: &App, notice: Option<&str>, offset: usize) -> Surface {
         if width > card::TITLE_WIDTH as usize {
             origins.push(card::TITLE_X + (width + 60) as i32 - offset as i32);
         }
-        for x in origins {
+        for position_x in origins {
             Text::with_baseline(
                 &game.title,
-                Point::new(x, card::TITLE_Y),
+                Point::new(position_x, card::TITLE_Y),
                 MonoTextStyle::new(&FONT_10X20, Rgb888::new(119, 207, 180)),
                 Baseline::Top,
             ).draw(&mut target).unwrap();
@@ -144,8 +144,8 @@ fn reference(app: &App, notice: Option<&str>, offset: usize) -> Surface {
 }
 
 fn assert_pixels(frame: &RetainedFrame, expected: &Surface) {
-    let first = frame.surface().pixels().iter().zip(expected.pixels()).position(|(a, b)| a != b);
-    assert!(first.is_none(), "different pixel: {:?}", first.map(|i| (i % WIDTH as usize, i / WIDTH as usize)));
+    let first = frame.surface().pixels().iter().zip(expected.pixels()).position(|(first_item, second_item)| first_item != second_item);
+    assert!(first.is_none(), "different pixel: {:?}", first.map(|index| (index % WIDTH as usize, index / WIDTH as usize)));
 }
 
 #[test]
@@ -169,9 +169,9 @@ fn moving_title_matches_full_text_is_clipped_and_never_reads_the_preview_again()
 
             assert_eq!(update, PaintUpdate { title: offset != old_offset, ..Default::default() });
             assert_pixels(&frame, &reference(&app, None, offset));
-            for (i, (&a, &b)) in before.iter().zip(frame.surface().pixels()).enumerate() {
-                if a != b {
-                    assert!(title_bounds().contains(Point::new((i % WIDTH as usize) as i32, (i / WIDTH as usize) as i32)));
+            for (index, (&first_item, &second_item)) in before.iter().zip(frame.surface().pixels()).enumerate() {
+                if first_item != second_item {
+                    assert!(title_bounds().contains(Point::new((index % WIDTH as usize) as i32, (index / WIDTH as usize) as i32)));
                 }
             }
             before.copy_from_slice(frame.surface().pixels());
@@ -318,23 +318,34 @@ fn real_headless_loop_animates_without_input_or_preference_writes() {
         "platform":"NES", "image":"synthetic.nes", "title":long_title("ABCDEFGHIJKLMNOPQRSTUVWXYZ"),
         "hash":crate::common::hash("synthetic.nes")
     }]})).unwrap()).unwrap();
-    let mut driver = ipc_support::Driver::new(Path::new(env!("CARGO_BIN_EXE_igui")), Path::new("/"));
-    driver.args(["--games"]).args([games.as_os_str()]);
-    let mut running = driver.start().unwrap();
-    running.wait_ready().unwrap();
+    let mut host = imanlib::igui_iman_stub::Host::bind(directory.path()).unwrap();
+    host.expect_gui(std::process::id()).unwrap();
+    let socket = host.path().to_owned();
+    let stopped = Arc::new(AtomicBool::new(false));
+    let task_stop = stopped.clone();
+    let host = crate::common::HostGuard::new(stopped, thread::spawn(move || {
+        while !task_stop.load(Ordering::Relaxed) {
+            assert!(host.poll().is_empty());
+            thread::sleep(ms(1));
+        }
+    }));
+    let mut running = ipc_support::ClockedSession::start(igui::runtime::Config {
+        ipc_socket: Some(socket), games: Some(games.clone()), ..Default::default()
+    }).unwrap();
+    running.wait_status(|status| status["ready"] == true);
     let reply = running.client.value("igui.screenshot", json!({})).unwrap();
     let before = crate::common::images::read_screenshot(Path::new(reply["path"].as_str().unwrap()));
 
-    thread::sleep(ms(1_300));
+    running.set_time(1_300);
     let reply = running.client.value("igui.screenshot", json!({})).unwrap();
     let after = crate::common::images::read_screenshot(Path::new(reply["path"].as_str().unwrap()));
 
     let mut changed = 0;
-    for y in card::TOP as usize..card::BOTTOM as usize {
-        for x in 656..1252 {
-            let i = (y * WIDTH as usize + x) * 3;
-            if before[i..i + 3] != after[i..i + 3] {
-                assert!(title_bounds().contains(Point::new(x as i32, y as i32)));
+    for position_y in card::TOP as usize..card::BOTTOM as usize {
+        for position_x in 656..1252 {
+            let index = (position_y * WIDTH as usize + position_x) * 3;
+            if before[index..index + 3] != after[index..index + 3] {
+                assert!(title_bounds().contains(Point::new(position_x as i32, position_y as i32)));
                 changed += 1;
             }
         }
@@ -343,5 +354,6 @@ fn real_headless_loop_animates_without_input_or_preference_writes() {
     assert!(!directory.path().join("prefs.json").exists());
     assert_eq!(fs::read_dir(&games).unwrap().count(), 1);
     running.client.value("igui.close", json!({})).unwrap();
-    assert!(running.finish().unwrap().status.success());
+    running.finish();
+    host.join().unwrap();
 }

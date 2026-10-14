@@ -20,10 +20,11 @@ pub struct Screenshot {
     pub path: PathBuf,
 }
 impl Screenshot {
+    /// Write a checked PNG screenshot to a new RAM or explicit destination, retaining ownership for cleanup.
     pub fn capture(socket: &Path, surface: &Surface) -> io::Result<Self> {
         let parent = socket
             .parent()
-            .filter(|p| p.is_absolute())
+            .filter(|path_item| path_item.is_absolute())
             .ok_or_else(|| io::Error::other("IPC socket path must be absolute"))?;
         let directory = OpenOptions::new()
             .read(true)
@@ -72,7 +73,7 @@ pub fn save(path: &Path, surface: &Surface) -> io::Result<()> {
                 && raw_name != b".."
                 && !path
                     .components()
-                    .any(|p| matches!(p, std::path::Component::ParentDir))
+                    .any(|path_item| matches!(path_item, std::path::Component::ParentDir))
         })
         .ok_or_else(|| {
             io::Error::new(

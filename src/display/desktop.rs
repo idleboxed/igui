@@ -2,6 +2,7 @@
 use imanlib::input::Buttons;
 use std::io;
 
+/// Open the fixed-size desktop window for the menu.
 pub(super) fn open() -> io::Result<minifb::Window> {
     let mut window = minifb::Window::new(
         "IGUI",
@@ -18,6 +19,7 @@ pub(super) fn open() -> io::Result<minifb::Window> {
     Ok(window)
 }
 
+/// Read held desktop keys as logical menu buttons.
 pub(super) fn buttons(window: &minifb::Window) -> Buttons {
     use imanlib::igui::Action;
     use minifb::{Key, KeyRepeat};

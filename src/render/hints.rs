@@ -48,10 +48,10 @@ impl Icon {
 
     fn draw<D: DrawTarget<Color = Rgb888>>(
         self,
-        d: &mut D,
+        device: &mut D,
         position: Point,
     ) -> Result<(), D::Error> {
-        d.draw_iter(self.rows.iter().enumerate().flat_map(|(row, bits)| {
+        device.draw_iter(self.rows.iter().enumerate().flat_map(|(row, bits)| {
             (0..ICON_SIZE).filter_map(move |col| {
                 (bits & (1 << (ICON_SIZE - 1 - col)) != 0).then_some(Pixel(
                     position + Point::new(col as i32, row as i32),
@@ -75,7 +75,7 @@ impl Glyph {
 
     fn draw<D: DrawTarget<Color = Rgb888>>(
         self,
-        d: &mut D,
+        device: &mut D,
         position: Point,
         color: Rgb888,
     ) -> Result<(), D::Error> {
@@ -88,7 +88,7 @@ impl Glyph {
             _ => None,
         };
         if let Some(rows) = arrow {
-            d.draw_iter(rows.iter().enumerate().flat_map(|(row, bits)| {
+            device.draw_iter(rows.iter().enumerate().flat_map(|(row, bits)| {
                 (0..7).filter_map(move |col| {
                     (bits & (1 << (6 - col)) != 0)
                         .then_some(Pixel(position + Point::new(col, 3 + row as i32), color))
@@ -97,7 +97,7 @@ impl Glyph {
         } else {
             let mut buffer = [0; 4];
             text(
-                d,
+                device,
                 self.symbol.encode_utf8(&mut buffer),
                 position.x,
                 position.y,
@@ -106,7 +106,7 @@ impl Glyph {
             )?;
         }
         if let Some(icon) = self.icon {
-            icon.draw(d, position + Point::new((CELL_WIDTH + ICON_GAP) as i32, 2))?;
+            icon.draw(device, position + Point::new((CELL_WIDTH + ICON_GAP) as i32, 2))?;
         }
         Ok(())
     }
@@ -129,8 +129,9 @@ fn glyphs(value: &str) -> impl Iterator<Item = Glyph> + Clone + '_ {
     })
 }
 
+/// Draw the compact icon and text hints for available actions.
 pub(super) fn draw<D: DrawTarget<Color = Rgb888>>(
-    d: &mut D,
+    device: &mut D,
     value: &str,
     mut position: Point,
     max_width: u32,
@@ -154,12 +155,12 @@ pub(super) fn draw<D: DrawTarget<Color = Rgb888>>(
         let Some(rest) = remaining.checked_sub(glyph.width()) else {
             break;
         };
-        glyph.draw(d, position, color)?;
+        glyph.draw(device, position, color)?;
         position.x += glyph.width() as i32;
         remaining = rest;
     }
     text(
-        d,
+        device,
         &"..."[..dots as usize],
         position.x,
         position.y,

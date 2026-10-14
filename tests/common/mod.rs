@@ -9,7 +9,7 @@ pub use resources::{ChildGuard, HostGuard, Scratch};
 /// Deterministic 64-hex fixture IDs, NOT hashes of real ROMs.
 pub fn hash(seed: &str) -> String {
     assert!(seed.len() <= 32);
-    let hex: String = seed.bytes().map(|b| format!("{b:02x}")).collect();
+    let hex: String = seed.bytes().map(|byte| format!("{byte:02x}")).collect();
     format!("{hex:0<64}")
 }
 

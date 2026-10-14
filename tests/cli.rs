@@ -36,8 +36,8 @@ impl Scratch {
 fn pixels_without_telemetry(path: impl AsRef<std::path::Path>) -> Vec<u8> {
     let mut pixels = crate::common::images::read_screenshot(path.as_ref());
     // System memory and disk space can change independently between screenshots.
-    for y in 684..720 {
-        pixels[(y * 1280 + igui::render::FOOTER_STATS_X as usize) * 3..(y * 1280 + 1280) * 3]
+    for platform_button in 684..720 {
+        pixels[(platform_button * 1280 + igui::render::FOOTER_STATS_X as usize) * 3..(platform_button * 1280 + 1280) * 3]
             .fill(0);
     }
     pixels
@@ -95,9 +95,9 @@ fn search_edit_clear_and_close_do_not_write_preferences() {
     // not the selected row or card with the initial Alpha selection.
     let baseline = pixels_without_telemetry(scratch.root().join("baseline.png"));
     let closed = pixels_without_telemetry(scratch.root().join("closed.png"));
-    for y in 90..156 {
-        assert_eq!(&baseline[(y * 1280 + 82) * 3..(y * 1280 + 620) * 3],
-            &closed[(y * 1280 + 82) * 3..(y * 1280 + 620) * 3]);
+    for platform_button in 90..156 {
+        assert_eq!(&baseline[(platform_button * 1280 + 82) * 3..(platform_button * 1280 + 620) * 3],
+            &closed[(platform_button * 1280 + 82) * 3..(platform_button * 1280 + 620) * 3]);
     }
     assert_eq!(&baseline[684 * 1280 * 3..], &closed[684 * 1280 * 3..]);
 }
@@ -669,7 +669,7 @@ fn trash_persists_across_restarts_and_restores_without_deleting_game_files() {
         if trashed {
             assert_eq!(prefs["trash"], json!([first]));
         } else {
-            assert!(prefs.get("trash").is_none_or(|v| *v == json!([])));
+            assert!(prefs.get("trash").is_none_or(|value_item| *value_item == json!([])));
         }
         if !events.ends_with("delete,a") && !events.ends_with("down,select") {
             assert_eq!(bytes, original); // opening/cancelling the modal also must not save
@@ -749,10 +749,10 @@ fn failed_trash_write_keeps_the_row_and_displays_a_save_error() {
     }
     let before = pixels_without_telemetry(scratch.root().join("before.png"));
     let failed = pixels_without_telemetry(scratch.root().join("failed.png"));
-    for y in 164..588 {
+    for platform_button in 164..588 {
         assert_eq!(
-            &before[(y * 1280 + 82) * 3..(y * 1280 + 620) * 3],
-            &failed[(y * 1280 + 82) * 3..(y * 1280 + 620) * 3]
+            &before[(platform_button * 1280 + 82) * 3..(platform_button * 1280 + 620) * 3],
+            &failed[(platform_button * 1280 + 82) * 3..(platform_button * 1280 + 620) * 3]
         );
     }
     assert_ne!(before, failed); // visible error notice, not a silent failure

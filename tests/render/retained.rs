@@ -199,8 +199,8 @@ fn search_matches_full_render_without_hidden_preview_work_or_idle_redraw() {
 #[test]
 fn mixed_width_tab_scrolling_matches_full_frame_in_both_directions() {
     for count in [0, 4, 12] {
-        let games = (0..count).map(|i| {
-            crate::common::game(&i.to_string(), "Game", &format!("P{i:02}"))
+        let games = (0..count).map(|index_item| {
+            crate::common::game(&index_item.to_string(), "Game", &format!("P{index_item:02}"))
         }).collect();
         let mut app = App::new(games);
         app.dispatch(Filters);
@@ -348,11 +348,11 @@ fn telemetry_only_changes_reserved_cells_and_rounded_equal_values_do_not_paint()
             ..Default::default()
         }
     );
-    for (i, (&a, &b)) in old.iter().zip(frame.surface().pixels()).enumerate() {
-        if a != b {
+    for (index_item, (&first_item, &second_item)) in old.iter().zip(frame.surface().pixels()).enumerate() {
+        if first_item != second_item {
             assert!(
-                i % WIDTH as usize >= FOOTER_STATS_X as usize
-                    && i / WIDTH as usize >= FOOTER_Y as usize
+                index_item % WIDTH as usize >= FOOTER_STATS_X as usize
+                    && index_item / WIDTH as usize >= FOOTER_Y as usize
             );
         }
     }
@@ -479,10 +479,10 @@ fn valid_thin_preview_retains_empty_area_without_failure_label() {
     );
     frame.update(&app, None, None).unwrap();
     assert_eq!(frame.prepared_preview_bytes(), 0);
-    for y in card_layout::PREVIEW_TOP..card_layout::PREVIEW_BOTTOM {
-        for x in 656..1252 {
+    for position_y in card_layout::PREVIEW_TOP..card_layout::PREVIEW_BOTTOM {
+        for position_x in 656..1252 {
             assert_eq!(
-                frame.surface().pixels()[y as usize * WIDTH as usize + x],
+                frame.surface().pixels()[position_y as usize * WIDTH as usize + position_x],
                 0x121a23
             );
         }
@@ -506,11 +506,11 @@ fn launch_overlay_only_paints_once_and_ram_tick_does_not_repaint_background() {
         }
     );
     // This one-line panel plus shadow fits in x=200..1088,y=304..424.
-    for (i, (&a, &b)) in before.iter().zip(frame.surface().pixels()).enumerate() {
-        if a != b {
-            let x = i % WIDTH as usize;
-            let y = i / WIDTH as usize;
-            assert!((200..1088).contains(&x) && (304..424).contains(&y));
+    for (index_item, (&first_item, &second_item)) in before.iter().zip(frame.surface().pixels()).enumerate() {
+        if first_item != second_item {
+            let position_x = index_item % WIDTH as usize;
+            let position_y = index_item / WIDTH as usize;
+            assert!((200..1088).contains(&position_x) && (304..424).contains(&position_y));
         }
     }
     dialog.presented(std::time::Duration::from_secs(10));
@@ -630,10 +630,10 @@ fn trash_modal_opens_once_survives_ram_ticks_and_closes_cleanly_on_a_or_b() {
                 assert!(update.dialog && !update.full);
                 if answer == Favourite {
                     assert_eq!(update, PaintUpdate { dialog: true, ..Default::default() });
-                    for (i, (&a, &b)) in before.iter().zip(frame.surface().pixels()).enumerate() {
-                        if a != b {
-                            assert!((200..1088).contains(&(i % WIDTH as usize))
-                                && (304..424).contains(&(i / WIDTH as usize)));
+                    for (index_item, (&first_item, &second_item)) in before.iter().zip(frame.surface().pixels()).enumerate() {
+                        if first_item != second_item {
+                            assert!((200..1088).contains(&(index_item % WIDTH as usize))
+                                && (304..424).contains(&(index_item / WIDTH as usize)));
                         }
                     }
                 }
@@ -687,10 +687,10 @@ fn startup_countdown_only_changes_its_text_row_and_keeps_menu_retained() {
                     dialog: true, ..Default::default()
                 });
                 // Two-line modal starts at y=292; only its first message row changes.
-                for (i, (&a, &b)) in before.iter().zip(frame.surface().pixels()).enumerate() {
-                    if a != b {
-                        assert!((201..1079).contains(&(i % WIDTH as usize))
-                            && (348..368).contains(&(i / WIDTH as usize)));
+                for (index_item, (&first_item, &second_item)) in before.iter().zip(frame.surface().pixels()).enumerate() {
+                    if first_item != second_item {
+                        assert!((201..1079).contains(&(index_item % WIDTH as usize))
+                            && (348..368).contains(&(index_item / WIDTH as usize)));
                     }
                 }
                 assert!(!compare_countdown(&mut frame, &mut reference, &app, &countdown).changed());
@@ -708,10 +708,10 @@ fn startup_countdown_only_changes_its_text_row_and_keeps_menu_retained() {
             assert_eq!(compare_countdown(&mut frame, &mut reference, &app, &countdown), PaintUpdate {
                 dialog: true, ..Default::default()
             });
-            for (i, (&a, &b)) in before.iter().zip(frame.surface().pixels()).enumerate() {
-                if a != b {
-                    assert!((200..1088).contains(&(i % WIDTH as usize))
-                        && (292..436).contains(&(i / WIDTH as usize)));
+            for (index_item, (&first_item, &second_item)) in before.iter().zip(frame.surface().pixels()).enumerate() {
+                if first_item != second_item {
+                    assert!((200..1088).contains(&(index_item % WIDTH as usize))
+                        && (292..436).contains(&(index_item / WIDTH as usize)));
                 }
             }
             assert!(!compare_countdown(&mut frame, &mut reference, &app, &countdown).changed());

@@ -71,8 +71,8 @@ fn choices_come_from_full_catalogue_and_players_is_exact_not_a_minimum() {
     select(&mut app, FilterField::Players, 3);
     assert_eq!(app.player_filter(), &Value(2));
     assert_eq!(app.visible_count(), 3);
-    for i in 0..app.visible_count() {
-        assert_eq!(app.visible_game(i).unwrap().players, Some(2));
+    for index_item in 0..app.visible_count() {
+        assert_eq!(app.visible_game(index_item).unwrap().players, Some(2));
     }
     select(&mut app, FilterField::Genre, 3);
     assert_eq!(app.visible_count(), 1);

@@ -18,11 +18,13 @@ impl NavigationInput {
         self.repeat = None;
     }
 
+    /// Suppress the selected action until its physical button is released.
     pub fn block_until_release(&mut self, action: Action) {
         self.blocked.set(action, true);
         self.repeat = None;
     }
 
+    /// Translate held buttons and elapsed time into new actions and bounded navigation repeats.
     pub fn poll(&mut self, buttons: Buttons, now: Duration) -> Vec<Action> {
         self.blocked = self.blocked.intersect(buttons);
         let mut actions = Vec::new();

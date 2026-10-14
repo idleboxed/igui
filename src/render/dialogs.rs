@@ -5,29 +5,32 @@ use super::*;
 pub fn draw_launch_dialog<D: DrawTarget<Color = Rgb888>>(
     app: &App,
     dialog: &LaunchDialog,
-    d: &mut D,
+    device: &mut D,
 ) -> Result<(), D::Error> {
-    draw_dialog(app.text(dialog.platform_name()), &dialog.message(app.locales()), d)
+    draw_dialog(app.text(dialog.platform_name()), &dialog.message(app.locales()), device)
 }
 
+/// Build the localized confirmation text for moving a game to trash.
 pub(super) fn trash_dialog_text(app: &App) -> (&str, &str) {
     (app.text("Move to trash?"), app.text("A: yes | B: no"))
 }
 
+/// Draw the localized soft-deletion confirmation dialog.
 pub fn draw_trash_dialog<D: DrawTarget<Color = Rgb888>>(
     app: &App,
-    d: &mut D,
+    device: &mut D,
 ) -> Result<(), D::Error> {
     let (heading, message) = trash_dialog_text(app);
-    draw_dialog(heading, message, d)
+    draw_dialog(heading, message, device)
 }
 
+/// Draw the startup controller-test invitation when its countdown is visible.
 pub fn draw_input_test_countdown<D: DrawTarget<Color = Rgb888>>(
     countdown: &crate::input::startup::StartupInputTest,
-    d: &mut D,
+    device: &mut D,
 ) -> Result<(), D::Error> {
     if let Some(message) = countdown.message() {
-        draw_dialog("Проверка геймпада", &message, d)?;
+        draw_dialog("Проверка геймпада", &message, device)?;
     }
     Ok(())
 }
@@ -35,9 +38,9 @@ pub fn draw_input_test_countdown<D: DrawTarget<Color = Rgb888>>(
 fn draw_dialog<D: DrawTarget<Color = Rgb888>>(
     heading: &str,
     message: &str,
-    d: &mut D,
+    device: &mut D,
 ) -> Result<(), D::Error> {
-    DialogLayout::new(heading, message).draw(d)
+    DialogLayout::new(heading, message).draw(device)
 }
 
 #[derive(PartialEq, Eq)]
@@ -48,6 +51,7 @@ pub(super) struct DialogLayout {
 }
 
 impl DialogLayout {
+    /// Lay out dialog text and calculate its fixed panel geometry.
     pub(super) fn new(heading: &str, message: &str) -> Self {
         let mut lines = description::wrap(message, 76);
         if lines.len() > 7 {
@@ -67,6 +71,7 @@ impl DialogLayout {
         }
     }
 
+    /// Return the dialog panel's pixel rectangle.
     pub(super) fn bounds(&self) -> Rectangle {
         Rectangle::new(self.panel.top_left, self.panel.size + Size::new(8, 8))
     }
@@ -76,10 +81,10 @@ impl DialogLayout {
         value: &str,
         offset: i32,
         color: Rgb888,
-        d: &mut D,
+        device: &mut D,
     ) -> Result<(), D::Error> {
         text(
-            d,
+            device,
             value,
             (WIDTH as i32 - value.chars().count() as i32 * 10) / 2,
             self.panel.top_left.y + offset,
@@ -88,23 +93,25 @@ impl DialogLayout {
         )
     }
 
-    pub(super) fn draw<D: DrawTarget<Color = Rgb888>>(&self, d: &mut D) -> Result<(), D::Error> {
-        fill(d, self.panel.translate(Point::new(8, 8)), BG)?;
-        fill(d, self.panel, PANEL)?;
-        border(d, self.panel, TEXT, 1)?;
-        self.row(&self.heading, 32, TEXT, d)?;
+    /// Draw the complete dialog panel and its prepared rows.
+    pub(super) fn draw<D: DrawTarget<Color = Rgb888>>(&self, device: &mut D) -> Result<(), D::Error> {
+        fill(device, self.panel.translate(Point::new(8, 8)), BG)?;
+        fill(device, self.panel, PANEL)?;
+        border(device, self.panel, TEXT, 1)?;
+        self.row(&self.heading, 32, TEXT, device)?;
         for (row, line) in self.lines.iter().enumerate() {
-            self.row(line, 56 + row as i32 * 24, ACTIVE, d)?;
+            self.row(line, 56 + row as i32 * 24, ACTIVE, device)?;
         }
         Ok(())
     }
 
     // An opaque panel of the same size needs only changed text rows cleared.
     // In particular, 10 -> 9 must erase the old digit without repainting the menu.
+    /// Update changed rows within an unchanged dialog panel.
     pub(super) fn draw_changed<D: DrawTarget<Color = Rgb888>>(
         &self,
         previous: &Self,
-        d: &mut D,
+        device: &mut D,
     ) -> Result<(), D::Error> {
         assert_eq!(self.panel, previous.panel);
         for (changed, value, offset, color) in std::iter::once((
@@ -113,13 +120,13 @@ impl DialogLayout {
             (line != old, line.as_str(), 56 + row as i32 * 24, ACTIVE)
         })) {
             if changed {
-                fill(d, rectangle(
+                fill(device, rectangle(
                     self.panel.top_left.x + 1,
                     self.panel.top_left.y + offset,
                     self.panel.size.width - 2,
                     FONT_10X20.character_size.height,
                 ), PANEL)?;
-                self.row(value, offset, color, d)?;
+                self.row(value, offset, color, device)?;
             }
         }
         Ok(())

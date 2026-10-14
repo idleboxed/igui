@@ -26,6 +26,7 @@ pub struct PaintUpdate {
     pub telemetry: bool,
 }
 impl PaintUpdate {
+    /// Report whether any retained frame region needs presentation.
     pub fn changed(self) -> bool {
         self != Self::default()
     }
@@ -86,8 +87,8 @@ impl LeftState {
                 platforms.start,
                 app.platform_tab_count(),
                 platforms
-                    .filter_map(|i| match app.platform_tab(i) {
-                        Some(TopTab::Platform(p)) => Some(p.to_owned()),
+                    .filter_map(|index| match app.platform_tab(index) {
+                        Some(TopTab::Platform(preview_item)) => Some(preview_item.to_owned()),
                         _ => None,
                     })
                     .collect(),
@@ -97,8 +98,8 @@ impl LeftState {
                 total: app.visible_count(),
                 selected: app.selected_index(),
                 items: (rows..(rows + LIST_ROWS).min(app.visible_count()))
-                    .map(|i| {
-                        let game = app.visible_game(i).expect("visible row");
+                    .map(|index| {
+                        let game = app.visible_game(index).expect("visible row");
                         (
                             game.title.clone(),
                             game.platform.clone(),
@@ -113,7 +114,7 @@ impl LeftState {
                 count,
                 app.option_cursor(),
                 (options..(options + 6).min(count))
-                    .map(|i| app.option_label(app.lower_field(), i))
+                    .map(|index| app.option_label(app.lower_field(), index))
                     .collect(),
             ),
             labels: [
@@ -164,6 +165,7 @@ pub struct RetainedFrame {
     statistics: Statistics,
 }
 impl RetainedFrame {
+    /// Own a surface and renderer for retained menu updates.
     pub fn new(surface: Surface, renderer: Renderer) -> Self {
         assert_eq!((surface.width(), surface.height()), (WIDTH, HEIGHT));
         Self {
@@ -175,25 +177,30 @@ impl RetainedFrame {
             statistics: Statistics::default(),
         }
     }
+    /// Borrow the cached menu surface.
     pub fn surface(&self) -> &Surface {
         &self.surface
     }
+    /// Borrow the cached surface for explicit splash or overlay drawing.
     pub fn surface_mut(&mut self) -> &mut Surface {
         self.previous = None;
         self.dialog_background = None;
         &mut self.surface
     }
+    /// Prepare only the selected game's preview for a later frame.
     pub fn prepare_selected(&mut self, app: &App) {
         self.renderer.prepare_selected(app);
     }
+    /// Copy the accumulated region-update counters.
     pub fn statistics(&self) -> &Statistics {
         &self.statistics
     }
+    /// Return the memory occupied by the currently prepared preview surface.
     pub fn prepared_preview_bytes(&self) -> usize {
         self.renderer
             .picture
             .as_ref()
-            .and_then(|p| p.surface.as_ref())
+            .and_then(|preview_item| preview_item.surface.as_ref())
             .map_or(0, |surface| surface.pixels().len() * 4)
     }
 
@@ -218,6 +225,7 @@ impl RetainedFrame {
         Ok(update)
     }
 
+    /// Update changed menu regions without a launch dialog or startup countdown.
     pub fn update(
         &mut self,
         app: &App,
@@ -241,15 +249,15 @@ impl RetainedFrame {
         let selected = app.detail_game();
         let search = app.search();
         let old = self.previous.as_ref();
-        if old.and_then(|s| s.selected.as_ref()).map(|g| (&g.hash, &g.title))
-            != selected.map(|g| (&g.hash, &g.title)) {
-            self.title_marquee = Marquee::new(selected.map_or(0, |g| title_width(&g.title)), card::TITLE_WIDTH as usize);
+        if old.and_then(|snapshot| snapshot.selected.as_ref()).map(|game_item| (&game_item.hash, &game_item.title))
+            != selected.map(|game_item| (&game_item.hash, &game_item.title)) {
+            self.title_marquee = Marquee::new(selected.map_or(0, |game_item| title_width(&game_item.title)), card::TITLE_WIDTH as usize);
         }
         let dialog_key = countdown
-            .and_then(|c| c.message())
+            .and_then(|countdown_item| countdown_item.message())
             .map(|message| DialogLayout::new("Проверка геймпада", &message))
-            .or_else(|| dialog.map(|d| {
-                DialogLayout::new(app.text(d.platform_name()), &d.message(app.locales()))
+            .or_else(|| dialog.map(|dialog_item| {
+                DialogLayout::new(app.text(dialog_item.platform_name()), &dialog_item.message(app.locales()))
             }))
             .or_else(|| {
                 app.trash_confirmation().then(|| {
@@ -258,7 +266,7 @@ impl RetainedFrame {
                 })
             });
         let modal_visible = dialog_key.is_some();
-        let full = old.is_none_or(|s| s.locales != *app.locales());
+        let full = old.is_none_or(|snapshot| snapshot.locales != *app.locales());
         let update = if full {
             PaintUpdate {
                 full: true,
@@ -278,7 +286,7 @@ impl RetainedFrame {
                             || old.notice.as_deref() != notice)),
                 preview: search.is_none()
                     && !mode_changed
-                    && old.selected.as_ref().map(|g| &g.preview) != selected.map(|g| &g.preview),
+                    && old.selected.as_ref().map(|game_item| &game_item.preview) != selected.map(|game_item| &game_item.preview),
                 metadata: search.is_none()
                     && !mode_changed
                     && (old.selected.as_ref() != selected
@@ -312,14 +320,14 @@ impl RetainedFrame {
                 dialog.draw(&mut self.surface)?;
             }
         } else {
-            let old_dialog = old.and_then(|s| s.dialog.as_ref());
+            let old_dialog = old.and_then(|snapshot| snapshot.dialog.as_ref());
             let background_changed = update.left || update.right || update.preview
                 || update.metadata || update.borders || update.header;
             // Restore only the covered rectangle before repainting underlying
             // regions, removing the modal, or replacing it with a different size.
             // Text-only changes keep both the opaque panel and its saved underlay.
             if update.dialog && old_dialog.is_some() && (background_changed
-                || old_dialog.map(|d| d.panel) != dialog_key.as_ref().map(|d| d.panel)) {
+                || old_dialog.map(|dialog_item| dialog_item.panel) != dialog_key.as_ref().map(|dialog_item| dialog_item.panel)) {
                 let saved = self.dialog_background.take().expect("modal background");
                 self.surface.blit(&saved.surface, saved.position);
             }
@@ -430,35 +438,35 @@ impl RetainedFrame {
 
     fn record_update(&mut self, update: PaintUpdate, started: Instant, modal_visible: bool) {
         let elapsed = started.elapsed().as_micros();
-        let s = &mut self.statistics;
-        s.requests += 1;
-        s.unchanged += u64::from(!update.changed());
-        s.full += u64::from(update.full);
-        s.dialog += u64::from(update.dialog || (update.full && modal_visible));
-        s.left += u64::from(update.left);
-        s.preview += u64::from(update.preview);
-        s.metadata += u64::from(update.metadata);
-        s.telemetry += u64::from(update.telemetry);
-        s.render_us_sum += elapsed;
-        s.render_us_max = s.render_us_max.max(elapsed);
+        let snapshot = &mut self.statistics;
+        snapshot.requests += 1;
+        snapshot.unchanged += u64::from(!update.changed());
+        snapshot.full += u64::from(update.full);
+        snapshot.dialog += u64::from(update.dialog || (update.full && modal_visible));
+        snapshot.left += u64::from(update.left);
+        snapshot.preview += u64::from(update.preview);
+        snapshot.metadata += u64::from(update.metadata);
+        snapshot.telemetry += u64::from(update.telemetry);
+        snapshot.render_us_sum += elapsed;
+        snapshot.render_us_max = snapshot.render_us_max.max(elapsed);
         if update.full {
-            s.full_cost.record(elapsed);
+            snapshot.full_cost.record(elapsed);
         } else if update
             == (PaintUpdate {
                 dialog: true,
                 ..Default::default()
             })
         {
-            s.dialog_cost.record(elapsed);
+            snapshot.dialog_cost.record(elapsed);
         } else if update
             == (PaintUpdate {
                 telemetry: true,
                 ..Default::default()
             })
         {
-            s.telemetry_only_cost.record(elapsed);
+            snapshot.telemetry_only_cost.record(elapsed);
         } else if update.changed() {
-            s.partial_cost.record(elapsed);
+            snapshot.partial_cost.record(elapsed);
         }
     }
 }

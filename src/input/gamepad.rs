@@ -23,6 +23,7 @@ pub struct Gamepad {
 }
 
 impl Gamepad {
+    /// Create input state with supplied profiles; devices are acquired only during polling.
     pub fn with_profiles(
         path: Option<PathBuf>,
         overrides: Option<(u8, u8, u8, u8)>,
@@ -48,6 +49,7 @@ impl Gamepad {
         }
     }
 
+    /// Enable bounded counters in the selected gamepad backends.
     pub fn enable_diagnostics(&mut self) {
         self.diagnostics = Some(Sample::default());
         self.logical_edge_sampler = LogicalEdgeSampler::default();
@@ -61,6 +63,7 @@ impl Gamepad {
         sample.joydev_connected = self.device.is_some();
         Some(sample)
     }
+    /// Read permitted gamepad sources and return one logical button snapshot.
     pub fn poll(&mut self, now: Duration) -> Buttons {
         let buttons = self.poll_inner(now);
         if let Some(diagnostics) = &mut self.diagnostics {

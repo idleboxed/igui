@@ -35,6 +35,7 @@ impl Signals {
         }
         Ok(guard)
     }
+    /// Report whether a termination signal requested display shutdown.
     pub fn stopped(&self) -> bool {
         STOP.load(Ordering::Relaxed)
     }
@@ -60,6 +61,7 @@ pub struct Display {
     pub timings: Option<(Timing, Timing)>,
 }
 impl Display {
+    /// Open the selected DRM device and acquire its checked route for the initial surface.
     pub fn open(first: &Surface, options: &super::Config) -> io::Result<Self> {
         let backend = LinuxDrm::open(
             options

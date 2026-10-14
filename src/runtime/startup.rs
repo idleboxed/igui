@@ -20,6 +20,7 @@ pub fn load_session(
     load_session_with_cancellation(root, locales_root, &Cancellation::default(), progress)
 }
 
+/// Load checked catalogue, preferences and translations while honoring worker cancellation.
 pub(super) fn load_session_with_cancellation(
     root: &Path,
     locales_root: &Path,
@@ -34,7 +35,7 @@ pub(super) fn load_session_with_cancellation(
     progress(Stage::Preferences, None)?;
     let root = root
         .canonicalize()
-        .map_err(|e| format!("{}: {e}", root.display()))?;
+        .map_err(|error| format!("{}: {error}", root.display()))?;
     let prefs_root = root
         .parent()
         .ok_or_else(|| format!("games directory must have a parent for {PREFERENCES_FILE}"))?;

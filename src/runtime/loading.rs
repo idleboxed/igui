@@ -25,6 +25,7 @@ pub enum Stage {
 }
 
 impl Stage {
+    /// Return the English caption for this actual loading stage.
     pub fn label(self) -> &'static str {
         match self {
             Self::Starting => "Starting IGUI",
@@ -55,6 +56,7 @@ pub struct Cancellation {
 }
 
 impl Cancellation {
+    /// Fail if cancellation was requested for the metadata worker.
     pub fn check(&self) -> Result<(), String> {
         if *self.state.0.lock().expect("catalog cancellation lock poisoned") {
             Err("catalog loading cancelled".into())
@@ -63,6 +65,7 @@ impl Cancellation {
         }
     }
 
+    /// Wait for a bounded diagnostic delay, waking early on cancellation.
     pub fn wait_for(&self, duration: Duration) -> Result<(), String> {
         let cancelled = self.state.0.lock().expect("catalog cancellation lock poisoned");
         let (cancelled, _) = self.state.1
@@ -82,6 +85,7 @@ impl Cancellation {
 }
 
 impl CatalogLoader {
+    /// Start a cancellable catalogue loader and build menu state from its returned games.
     pub fn spawn<F>(source: F) -> io::Result<Self>
     where
         F: FnOnce(&Cancellation) -> Result<Vec<Game>, String> + Send + 'static,
@@ -91,6 +95,7 @@ impl CatalogLoader {
 }
 
 impl<T: Send + 'static> CatalogLoader<T> {
+    /// Start a cancellable worker producing the requested session value.
     pub fn spawn_value<F>(source: F) -> io::Result<Self>
     where
         F: FnOnce(&Cancellation) -> Result<T, String> + Send + 'static,

@@ -22,6 +22,7 @@ pub struct Game {
 }
 
 impl Game {
+    /// Create a game with its required identity and display fields, leaving optional metadata empty.
     pub fn new(hash: &str, image: &str, title: &str, platform: &str) -> Self {
         Self {
             hash: hash.into(),
@@ -37,10 +38,11 @@ impl Game {
         }
     }
 
+    /// Return the title's alphabet-filter initial, using the non-letter bucket when appropriate.
     pub fn initial(&self) -> char {
         match self.title.trim().chars().next() {
-            Some(c) if c.is_numeric() => '#',
-            Some(c) => c.to_uppercase().next().unwrap_or(c),
+            Some(character) if character.is_numeric() => '#',
+            Some(character) => character.to_uppercase().next().unwrap_or(character),
             None => '#',
         }
     }

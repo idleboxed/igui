@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: BSD-3-Clause
-//! Real headless IGUI with a synthetic host: the startup timer uses real monotonic time.
+//! Real headless IGUI and synthetic host, with a manually advanced startup clock.
 
-use imanlib::{client::Client, igui::{Bootstrap, GuiState}, protocol::{Message, Response}, server::Server};
+use imanlib::{igui::{Bootstrap, GuiState}, protocol::{Message, Response}, server::Server};
 use serde_json::json;
-use std::{fs, process::{Command, Stdio}, sync::{Arc, atomic::{AtomicBool, Ordering}}, thread, time::{Duration, Instant}};
+use std::{fs, sync::{Arc, atomic::{AtomicBool, Ordering}}, thread, time::{Duration, Instant}};
 
-use crate::common::{ChildGuard, HostGuard};
+use crate::common::{ipc::ClockedSession, HostGuard};
 
 #[test]
 fn automatic_input_test_hands_off_and_exits_without_running_in_gui() {
@@ -26,10 +26,7 @@ fn managed_startup(cancel_countdown: bool) {
     })).unwrap()).unwrap();
     let mut server = Server::bind(directory.path()).unwrap();
     let socket = server.path().to_owned();
-    let mut child = ChildGuard::new(Command::new(env!("CARGO_BIN_EXE_igui"))
-        .args(["--managed", "--headless", "--ipc-socket"]).arg(&socket)
-        .current_dir("/").stdin(Stdio::null()).stdout(Stdio::null()).stderr(Stdio::inherit()).spawn().unwrap());
-    let pid = child.id();
+    let pid = std::process::id();
     let root = directory.path().to_owned();
     let stopped = Arc::new(AtomicBool::new(false));
     let requested = Arc::new(AtomicBool::new(false));
@@ -70,39 +67,45 @@ fn managed_startup(cancel_countdown: bool) {
             thread::sleep(Duration::from_millis(1));
         }
     }));
-    let mut client = Client::connect(&socket).unwrap();
-    let deadline = Instant::now() + Duration::from_secs(28);
-    let mut saw_countdown = false;
-    loop {
-        if requested.load(Ordering::Relaxed) { break; }
-        if let Ok(status) = client.value("igui.status", json!({})) {
-            saw_countdown |= status["input_test_countdown"].is_u64();
-            if cancel_countdown && saw_countdown { break; }
-        }
-        assert!(Instant::now() < deadline);
-        thread::sleep(Duration::from_millis(25));
-    }
-    assert!(saw_countdown);
+    let mut running = ClockedSession::start(igui::runtime::Config {
+        managed: true, ipc_socket: Some(socket), ..Default::default()
+    }).unwrap();
+    let ready = running.wait_status(|status| status["ready"] == true);
+    assert_eq!(ready["input_test_countdown"], serde_json::Value::Null);
+    running.set_time(9_999);
+    assert_eq!(running.client.value("igui.status", json!({})).unwrap()["input_test_countdown"], serde_json::Value::Null);
+    assert!(!requested.load(Ordering::Relaxed));
+
+    running.set_time(10_000);
+    let countdown = running.wait_status(|status| status["input_test_countdown"] == 10);
+    assert_eq!(countdown["input_test_active"], false);
+
     if cancel_countdown {
-        let result = client.value("igui.input", json!({"action":"b"})).unwrap();
+        let result = running.client.value("igui.input", json!({"action":"b"})).unwrap();
         assert_eq!(result["processed"], true);
         assert_eq!(result["closing"], false);
-        // The model covers distant deadlines; these frames exercise modal cleanup.
-        for _ in 0..8 {
-            let status = client.value("igui.status", json!({})).unwrap();
+        for milliseconds in [20_000, 80_000] {
+            running.set_time(milliseconds);
+            let status = running.client.value("igui.status", json!({})).unwrap();
             assert_eq!(status["ready"], true);
             assert_eq!(status["input_test_countdown"], serde_json::Value::Null);
             assert_eq!(status["input_test_active"], false);
             assert_eq!(status["launching"], false);
             assert!(!directory.path().join("prefs.json").exists());
-            thread::sleep(Duration::from_millis(25));
         }
-        client.value("igui.close", json!({})).unwrap();
+        running.client.value("igui.close", json!({})).unwrap();
+    } else {
+        running.set_time(19_999);
+        running.wait_status(|status| status["input_test_countdown"] == 1);
+        assert!(!requested.load(Ordering::Relaxed));
+        running.set_time(20_000);
+        let deadline = Instant::now() + Duration::from_secs(5);
+        while !requested.load(Ordering::Relaxed) {
+            assert!(Instant::now() < deadline, "host did not receive the input-test handoff");
+            thread::yield_now();
+        }
     }
-    while child.try_wait().unwrap().is_none() {
-        assert!(Instant::now() < deadline);
-        thread::sleep(Duration::from_millis(5));
-    }
+    running.finish();
     host.join().unwrap();
     assert_eq!(requested.load(Ordering::Relaxed), !cancel_countdown);
     assert!(!directory.path().join("prefs.json").exists());

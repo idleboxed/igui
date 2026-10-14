@@ -101,12 +101,12 @@ fn with_hint(value: &str) -> App {
     app
 }
 
-fn area(pixels: &[u32], x: usize, width: usize) -> Vec<u32> {
+fn area(pixels: &[u32], position_x: usize, width: usize) -> Vec<u32> {
     pixels
         .chunks(WIDTH as usize)
         .skip(HINT_Y)
         .take(13)
-        .flat_map(|row| row[x..x + width].iter().copied())
+        .flat_map(|row| row[position_x..position_x + width].iter().copied())
         .collect()
 }
 
@@ -116,10 +116,10 @@ fn expected_surface(width: usize) -> Surface {
     surface
 }
 
-fn label(surface: &mut Surface, value: &str, x: usize) {
+fn label(surface: &mut Surface, value: &str, position_x: usize) {
     Text::with_baseline(
         value,
-        Point::new(x as i32, 0),
+        Point::new(position_x as i32, 0),
         MonoTextStyle::new(&FONT_7X13, Rgb888::new(151, 169, 174)),
         Baseline::Top,
     )
@@ -127,14 +127,14 @@ fn label(surface: &mut Surface, value: &str, x: usize) {
     .unwrap();
 }
 
-fn pair(surface: &mut Surface, symbol: char, x: usize) {
+fn pair(surface: &mut Surface, symbol: char, position_x: usize) {
     let (_, color, mask) = BUTTONS.iter().find(|&&(key, _, _)| key == symbol).unwrap();
-    label(surface, &symbol.to_string(), x);
+    label(surface, &symbol.to_string(), position_x);
     let color = Rgb888::new((color >> 16) as u8, (color >> 8) as u8, *color as u8);
     for (row, bits) in mask.iter().enumerate() {
         for (col, bit) in bits.bytes().enumerate() {
             if bit == b'#' {
-                Pixel(Point::new((x + 9 + col) as i32, (2 + row) as i32), color)
+                Pixel(Point::new((position_x + 9 + col) as i32, (2 + row) as i32), color)
                     .draw(surface)
                     .unwrap();
             }
@@ -172,8 +172,8 @@ fn button_shapes_and_neutral_letters_are_correct_in_every_context_and_language()
                     let positions: Vec<_> = pixels
                         .iter()
                         .enumerate()
-                        .filter_map(|(i, &pixel)| {
-                            (pixel == color).then_some((i % WIDTH as usize, i / WIDTH as usize))
+                        .filter_map(|(index, &pixel)| {
+                            (pixel == color).then_some((index % WIDTH as usize, index / WIDTH as usize))
                         })
                         .collect();
                     if !keys.contains(key) {
@@ -184,14 +184,14 @@ fn button_shapes_and_neutral_letters_are_correct_in_every_context_and_language()
                         !positions.is_empty(),
                         "missing {key} in {focus:?}, {language}"
                     );
-                    assert!(positions.iter().all(|&(x, y)| {
-                        (HINT_X..HINT_X + HINT_WIDTH).contains(&x)
-                            && (HINT_Y + 2..HINT_Y + 11).contains(&y)
+                    assert!(positions.iter().all(|&(position_x, position_y)| {
+                        (HINT_X..HINT_X + HINT_WIDTH).contains(&position_x)
+                            && (HINT_Y + 2..HINT_Y + 11).contains(&position_y)
                     }));
-                    let x = positions.iter().map(|&(x, _)| x).min().unwrap() - 9;
+                    let position_x = positions.iter().map(|&(position_x, _)| position_x).min().unwrap() - 9;
                     let mut expected = expected_surface(20);
                     pair(&mut expected, key, 0);
-                    assert_eq!(area(&pixels, x, 20), expected.pixels(), "{key}, {language}");
+                    assert_eq!(area(&pixels, position_x, 20), expected.pixels(), "{key}, {language}");
                 }
             }
         }
@@ -232,12 +232,12 @@ fn slash_combinations_keep_their_separators_and_decorate_only_whole_keys() {
     label(&mut expected, "/", 20);
     pair(&mut expected, 'A', 27);
     label(&mut expected, " filters | ", 47);
-    let x = 47 + " filters | ".len() * 7;
-    pair(&mut expected, 'X', x);
-    label(&mut expected, "/AB choose | ", x + 20);
-    let x = x + 20 + "/AB choose | ".len() * 7;
-    pair(&mut expected, 'B', x);
-    label(&mut expected, " cancel", x + 20);
+    let position_x = 47 + " filters | ".len() * 7;
+    pair(&mut expected, 'X', position_x);
+    label(&mut expected, "/AB choose | ", position_x + 20);
+    let position_x = position_x + 20 + "/AB choose | ".len() * 7;
+    pair(&mut expected, 'B', position_x);
+    label(&mut expected, " cancel", position_x + 20);
     assert_eq!(area(&pixels, HINT_X, HINT_WIDTH), expected.pixels());
 }
 
@@ -273,9 +273,9 @@ fn trash_and_restore_hints_show_only_select_without_its_keyboard_alias() {
             let mut expected = expected_surface(width);
             label(&mut expected, &value, 0);
             // X and B before Select each add a 9px icon and two 2px gaps.
-            let x = HINT_X + prefix.chars().count() * 7 + 2 * 13;
+            let position_x = HINT_X + prefix.chars().count() * 7 + 2 * 13;
             assert_eq!(
-                area(&pixels, x, width),
+                area(&pixels, position_x, width),
                 expected.pixels(),
                 "{language}: {action}"
             );
@@ -291,16 +291,16 @@ fn truncation_keeps_button_pairs_whole_and_reserves_space_for_the_ellipsis() {
 
         let mut expected = expected_surface(HINT_WIDTH);
         label(&mut expected, &prefix, 0);
-        let mut x = prefix.chars().count() * 7;
+        let mut position_x = prefix.chars().count() * 7;
         if fits {
-            pair(&mut expected, 'X', x);
-            x += 20;
+            pair(&mut expected, 'X', position_x);
+            position_x += 20;
         }
-        label(&mut expected, "...", x);
+        label(&mut expected, "...", position_x);
         assert_eq!(area(&pixels, HINT_X, HINT_WIDTH), expected.pixels());
         assert!(area(&pixels, HINT_X + HINT_WIDTH, 24)
             .iter()
-            .all(|&p| p == 0x17202a));
+            .all(|&pixel_item| pixel_item == 0x17202a));
     }
 }
 
@@ -335,9 +335,9 @@ fn long_hints_cannot_paint_in_the_telemetry_region() {
     let before = frame(&baseline);
     let after = frame(&long);
 
-    let x = HINT_X + HINT_WIDTH;
+    let position_x = HINT_X + HINT_WIDTH;
     assert_eq!(
-        area(&before, x, WIDTH as usize - x),
-        area(&after, x, WIDTH as usize - x)
+        area(&before, position_x, WIDTH as usize - position_x),
+        area(&after, position_x, WIDTH as usize - position_x)
     );
 }

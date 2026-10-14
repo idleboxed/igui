@@ -14,14 +14,17 @@ pub struct Search {
 }
 
 impl Search {
+    /// Borrow the current search query.
     pub fn query(&self) -> &str {
         &self.query
     }
 
+    /// Return the query's text cursor position.
     pub fn cursor(&self) -> usize {
         self.cursor
     }
 
+    /// Return the selected on-screen keyboard row and column.
     pub fn key_position(&self) -> (usize, usize) {
         (self.row, self.column)
     }
@@ -35,6 +38,7 @@ impl Search {
                 .any(|part| part.eq_ignore_ascii_case(self.query.as_bytes()))
     }
 
+    /// Move the text cursor one position right or left, staying inside the query.
     pub(crate) fn move_cursor(&mut self, right: bool) {
         self.cursor = if right {
             (self.cursor + 1).min(self.query.len())
@@ -47,7 +51,7 @@ impl Search {
     pub(crate) fn move_key(&mut self, rows: isize, columns: isize) -> bool {
         let row = self.row.checked_add_signed(rows);
         let column = self.column.checked_add_signed(columns);
-        let Some(row) = row.filter(|&r| r < KEY_ROWS.len()) else {
+        let Some(row) = row.filter(|&row_item| row_item < KEY_ROWS.len()) else {
             return false;
         };
         let Some(column) = column else {
@@ -61,6 +65,7 @@ impl Search {
         true
     }
 
+    /// Insert the currently selected on-screen key within the query length limit.
     pub(crate) fn insert_key(&mut self) -> bool {
         if self.query.len() == MAX_QUERY {
             return false;
@@ -73,6 +78,7 @@ impl Search {
         true
     }
 
+    /// Delete the query character before the text cursor, if one exists.
     pub(crate) fn backspace(&mut self) -> bool {
         if self.cursor == 0 {
             return false;
@@ -82,6 +88,7 @@ impl Search {
         true
     }
 
+    /// Clear the query and reset its text cursor.
     pub(crate) fn clear(&mut self) -> bool {
         let changed = !self.query.is_empty();
         self.query.clear();

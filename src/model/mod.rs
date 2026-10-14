@@ -29,6 +29,7 @@ pub enum Focus {
 }
 
 impl Focus {
+    /// Report whether focus belongs to the search field or its keyboard.
     pub fn is_search(self) -> bool {
         matches!(self, Self::SearchField | Self::SearchKeys)
     }
@@ -104,8 +105,9 @@ pub struct App {
 }
 
 impl App {
+    /// Sort a catalogue and initialize menu state without performing I/O.
     pub fn new(mut games: Vec<Game>) -> Self {
-        games.sort_by_key(|g| (g.title.to_uppercase(), g.platform.clone(), g.image.clone()));
+        games.sort_by_key(|game_item| (game_item.title.to_uppercase(), game_item.platform.clone(), game_item.image.clone()));
         // Tabs come exclusively from the full catalog, never from a fixed
         // alphabet/platform list or the current filtered subset.
         let mut letters: Vec<_> = games
@@ -117,14 +119,14 @@ impl App {
         letters.sort_by_cached_key(|letter| alphabetical_key(&letter.to_string()));
         let platforms = games
             .iter()
-            .map(|g| g.platform.clone())
+            .map(|game_item| game_item.platform.clone())
             .collect::<BTreeSet<_>>()
             .into_iter()
             .collect();
         let visible: Vec<_> = (0..games.len()).collect();
         let selected = (!visible.is_empty()).then_some(0);
-        let player_choices = choices(games.iter().map(|g| g.players));
-        let genre_choices = choices(games.iter().map(|g| g.genre.clone()));
+        let player_choices = choices(games.iter().map(|game_item| game_item.players));
+        let genre_choices = choices(games.iter().map(|game_item| game_item.genre.clone()));
         let mut app = Self {
             games,
             favourites: BTreeSet::new(),
@@ -161,6 +163,7 @@ impl App {
         app
     }
 
+    /// Borrow the active search state, if search is open.
     pub fn search(&self) -> Option<&Search> {
         self.search.as_ref()
     }
@@ -173,132 +176,169 @@ impl App {
             self.selected_game()
         }
     }
+    /// Replace the displayed free-space sample without querying the filesystem.
     pub fn set_available_bytes(&mut self, bytes: Option<u64>) {
         self.available_bytes = bytes;
     }
 
+    /// Return the latest available-space sample, if known.
     pub fn available_bytes(&self) -> Option<u64> {
         self.available_bytes
     }
 
+    /// Replace the displayed memory sample without reading the system.
     pub fn set_memory(&mut self, memory: Option<MemoryInfo>) {
         self.memory = memory;
     }
 
+    /// Return the latest system memory sample, if known.
     pub fn memory(&self) -> Option<MemoryInfo> {
         self.memory
     }
 
+    /// Select translations and reorder genre choices while keeping selections.
     pub fn set_locales(&mut self, locales: Locales) {
         self.locales = locales;
         self.sort_genre_choices();
     }
+    /// Borrow the selected translation dictionary and English fallback.
     pub fn locales(&self) -> &Locales {
         &self.locales
     }
+    /// Report whether the header's exit control has focus.
     pub fn exit_focused(&self) -> bool {
         self.focus == Focus::Header
     }
+    /// Allow or disable controller-test UI, clearing an active test when disabled.
     pub fn enable_input_test(&mut self, enabled: bool) {
         self.input_test_enabled = enabled;
         if !enabled {
             self.input_test_active = false;
         }
     }
+    /// Report whether this session permits the controller-test UI.
     pub fn input_test_enabled(&self) -> bool {
         self.input_test_enabled
     }
+    /// Mark the controller test active only if the session enabled it.
     pub fn start_input_test(&mut self) {
         if self.input_test_enabled { self.input_test_active = true; }
     }
+    /// Report whether the menu is handing control to the controller test.
     pub fn input_test_active(&self) -> bool {
         self.input_test_active
     }
+    /// Clear the active controller-test state.
     pub fn close_input_test(&mut self) {
         self.input_test_active = false;
     }
+    /// Translate an English UI key using the selected dictionary.
     pub fn text<'a>(&'a self, english: &'a str) -> &'a str {
         self.locales.text(english)
     }
+    /// Borrow the wrapped description for the current detail card.
     pub fn description_lines(&self) -> &[String] {
         &self.description_lines
     }
+    /// Return the first visible wrapped description line.
     pub fn description_offset(&self) -> usize {
         self.description_offset
     }
+    /// Return the furthest valid description scroll offset.
     pub fn description_max_offset(&self) -> usize {
         self.description_lines
             .len()
             .saturating_sub(description::ROWS)
     }
 
+    /// Return the menu region currently receiving navigation actions.
     pub fn focus(&self) -> Focus {
         self.focus
     }
+    /// Borrow alphabet tabs derived from the full catalogue.
     pub fn letters(&self) -> &[char] {
         &self.letters
     }
+    /// Borrow platform tabs derived from the full catalogue.
     pub fn platforms(&self) -> &[String] {
         &self.platforms
     }
+    /// Return the focused alphabet-tab index.
     pub fn letter_cursor(&self) -> usize {
         self.letter_cursor
     }
+    /// Return the focused top-tab index.
     pub fn platform_cursor(&self) -> usize {
         self.platform_cursor
     }
+    /// Return the active alphabet filter, or None for all initials.
     pub fn letter_filter(&self) -> Option<char> {
         self.letter_filter
     }
+    /// Return the active platform filter, or None for all platforms.
     pub fn platform_filter(&self) -> Option<&str> {
         self.platform_filter.as_deref()
     }
+    /// Return the selected index within the filtered game list.
     pub fn selected_index(&self) -> Option<usize> {
         self.selected
     }
+    /// Return the number of games matching all active filters.
     pub fn visible_count(&self) -> usize {
         self.visible.len()
     }
+    /// Return the number of games in the full catalogue.
     pub fn total_count(&self) -> usize {
         self.games.len()
     }
+    /// Borrow a game by filtered-list index, or return None outside the list.
     pub fn visible_game(&self, index: usize) -> Option<&Game> {
-        self.visible.get(index).map(|&i| &self.games[i])
+        self.visible.get(index).map(|&index_item| &self.games[index_item])
     }
+    /// Borrow the selected visible game, if the list has a selection.
     pub fn selected_game(&self) -> Option<&Game> {
-        self.selected.and_then(|i| self.visible_game(i))
+        self.selected.and_then(|index_item| self.visible_game(index_item))
     }
 
+    /// Borrow player-count choices derived from the full catalogue.
     pub fn player_choices(&self) -> &[FilterValue<u8>] {
         &self.player_choices
     }
+    /// Borrow translated-order genre choices derived from the full catalogue.
     pub fn genre_choices(&self) -> &[FilterValue<String>] {
         &self.genre_choices
     }
+    /// Borrow the currently applied player-count filter.
     pub fn player_filter(&self) -> &FilterValue<u8> {
         &self.player_choices[self.player_filter]
     }
+    /// Borrow the currently applied genre filter.
     pub fn genre_filter(&self) -> &FilterValue<String> {
         &self.genre_choices[self.genre_filter]
     }
+    /// Return the selected lower-filter field.
     pub fn lower_field(&self) -> FilterField {
         self.lower_field
     }
+    /// Return the pending choice index in the open lower-filter list.
     pub fn option_cursor(&self) -> usize {
         self.option_cursor
     }
+    /// Return how many choices the requested lower-filter field has.
     pub fn option_count(&self, field: FilterField) -> usize {
         match field {
             FilterField::Players => self.player_choices.len(),
             FilterField::Genre => self.genre_choices.len(),
         }
     }
+    /// Return the applied choice index for the requested lower-filter field.
     pub fn active_option(&self, field: FilterField) -> usize {
         match field {
             FilterField::Players => self.player_filter,
             FilterField::Genre => self.genre_filter,
         }
     }
+    /// Format a valid choice index for the requested field using current translations.
     pub fn option_label(&self, field: FilterField, index: usize) -> String {
         match field {
             FilterField::Players => match &self.player_choices[index] {

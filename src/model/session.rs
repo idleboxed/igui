@@ -6,7 +6,7 @@ impl App {
     /// Only small navigation state crosses process boundaries, never catalogue/art.
     pub fn session_state(&self) -> GuiState {
         GuiState {
-            selected_hash: self.selected_game().map(|g| g.hash.clone()),
+            selected_hash: self.selected_game().map(|game| game.hash.clone()),
             letter: self.letter_filter,
             platform: self.platform_filter.clone(),
             favourites_only: self.favourites_only,
@@ -22,22 +22,22 @@ impl App {
     pub fn restore_session(&mut self, state: &GuiState) {
         self.pending_trash = None;
         self.search = None;
-        self.letter_filter = state.letter.filter(|v| self.letters.contains(v));
+        self.letter_filter = state.letter.filter(|value| self.letters.contains(value));
         self.platform_filter = state
             .platform
             .clone()
-            .filter(|v| self.platforms.contains(v));
+            .filter(|value| self.platforms.contains(value));
         self.favourites_only = state.favourites_only;
         self.trash_only = state.trash_only;
         self.player_filter = self
             .player_choices
             .iter()
-            .position(|v| v == &state.players)
+            .position(|value| value == &state.players)
             .unwrap_or(0);
         self.genre_filter = self
             .genre_choices
             .iter()
-            .position(|v| v == &state.genre)
+            .position(|value| value == &state.genre)
             .unwrap_or(0);
         self.letter_cursor = state
             .letter_cursor
@@ -49,7 +49,7 @@ impl App {
         if let Some(index) = self
             .visible
             .iter()
-            .position(|&i| Some(&self.games[i].hash) == state.selected_hash.as_ref())
+            .position(|&index_item| Some(&self.games[index_item].hash) == state.selected_hash.as_ref())
         {
             self.selected = Some(index);
         }

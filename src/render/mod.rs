@@ -64,21 +64,22 @@ impl Renderer {
         }
     }
 
+    /// Draw a complete menu frame using model state and demand-loaded preview bytes.
     pub fn draw<D: DrawTarget<Color = Rgb888>>(
         &mut self,
         app: &App,
         notice: Option<&str>,
-        d: &mut D,
+        device: &mut D,
     ) -> Result<(), D::Error> {
-        d.clear(BG)?;
-        self.header(app, d)?;
+        device.clear(BG)?;
+        self.header(app, device)?;
 
-        fill(d, rectangle(16, 80, 616, 592), PANEL)?;
-        self.alphabet(app, d)?;
-        self.platforms(app, d)?;
-        self.games(app, d)?;
-        self.right(app, notice, d)?;
-        self.lower_filters(app, d)?;
+        fill(device, rectangle(16, 80, 616, 592), PANEL)?;
+        self.alphabet(app, device)?;
+        self.platforms(app, device)?;
+        self.games(app, device)?;
+        self.right(app, notice, device)?;
+        self.lower_filters(app, device)?;
         let focused = match app.focus() {
             Focus::Alphabet
             | Focus::Platforms
@@ -88,8 +89,8 @@ impl Renderer {
             Focus::Details | Focus::SearchField | Focus::SearchKeys => rectangle(644, 80, 620, 592),
             Focus::Header => rectangle(16, 16, 1248, 52),
         };
-        border(d, focused, TEXT, 1)?;
-        self.footer(app, d)?;
+        border(device, focused, TEXT, 1)?;
+        self.footer(app, device)?;
         Ok(())
     }
 }

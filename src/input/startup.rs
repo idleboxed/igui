@@ -12,6 +12,7 @@ pub struct StartupInputTest {
 }
 
 impl StartupInputTest {
+    /// Advance the one-shot idle invitation using supplied milliseconds; input wins at timer boundaries.
     pub fn update(&mut self, ms: u64, ready: bool, activity: bool, b_pressed: bool) -> Transition {
         if self.consumed || !ready { return Transition::None; }
         let started = *self.ready_ms.get_or_insert(ms);
@@ -35,13 +36,16 @@ impl StartupInputTest {
         Transition::None
     }
 
+    /// Permanently consume the startup invitation and clear its countdown.
     pub fn cancel(&mut self) {
         self.countdown = None;
         self.consumed = true;
     }
 
+    /// Return the visible countdown seconds, or None when the invitation is hidden.
     pub fn countdown(&self) -> Option<u64> { self.countdown }
 
+    /// Return the countdown prompt, or None when no invitation is visible.
     pub fn message(&self) -> Option<String> {
         self.countdown.map(|seconds| format!(
             "Controller test starts in {seconds} ...\nPress B to cancel."

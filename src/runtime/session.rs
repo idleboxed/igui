@@ -8,20 +8,20 @@ use super::{
 };
 use crate::{display, memory, paths, render::{Renderer, RetainedFrame, HEIGHT, WIDTH}, storage};
 use imanlib::{igui::{Action, Handoff}, surface::Surface};
-use std::{error::Error, path::PathBuf};
+use std::{error::Error, path::PathBuf, time::Duration};
 
 fn renderer(root: PathBuf) -> Renderer {
     Renderer::with_previews(move |hash| storage::load_preview(&root, hash))
 }
 
-pub(super) fn run(options: Config) -> Result<(), Box<dyn Error>> {
+/// Own the menu loop, apply effects and complete worker and display cleanup before acknowledging closure.
+pub(super) fn run(options: Config, clock: impl Fn() -> Duration) -> Result<(), Box<dyn Error>> {
     use crate::input::NavigationInput;
     use crate::{
         runtime::loading::{CatalogLoader, Stage},
         locales::Locales,
         render::splash,
     };
-    use std::time::{Duration, Instant};
     #[cfg(target_os = "linux")]
     let profiles = crate::input::load_profiles(&options.input, options.display.headless)?;
     #[cfg(target_os = "linux")]
@@ -39,7 +39,7 @@ pub(super) fn run(options: Config) -> Result<(), Box<dyn Error>> {
             }
         })
         .transpose()?;
-    let bootstrap = managed.as_ref().and_then(|m| m.bootstrap.clone());
+    let bootstrap = managed.as_ref().and_then(|managed_item| managed_item.bootstrap.clone());
     let preferences_writable = !options.input.input_probe
         && bootstrap
             .as_ref()
@@ -51,7 +51,7 @@ pub(super) fn run(options: Config) -> Result<(), Box<dyn Error>> {
         splash_renderer.update(Duration::ZERO, Stage::Starting, &Locales::default(), &mut surface)?;
     }
     let mut window = display::Display::open(&options.display, &surface)?;
-    if bootstrap.as_ref().is_some_and(|b| b.diag_display) {
+    if bootstrap.as_ref().is_some_and(|bootstrap_item| bootstrap_item.diag_display) {
         window.enable_diagnostics();
     }
     #[cfg(target_os = "linux")]
@@ -65,7 +65,7 @@ pub(super) fn run(options: Config) -> Result<(), Box<dyn Error>> {
     }
     let root = bootstrap
         .as_ref()
-        .map(|b| b.root.join(paths::GAMES_DIR))
+        .map(|bootstrap_item| bootstrap_item.root.join(paths::GAMES_DIR))
         .or_else(|| options.games.clone())
         .ok_or("session has no games directory")?;
     let mut frame = RetainedFrame::new(surface, renderer(root.clone()));
@@ -73,11 +73,12 @@ pub(super) fn run(options: Config) -> Result<(), Box<dyn Error>> {
     let (progress_tx, progress_rx) = std::sync::mpsc::channel();
     let mut splash_locales = Locales::default();
     let mut stage = if cfg!(target_os = "linux") { Stage::Gamepad } else { Stage::Starting };
-    let started = Instant::now();
+    let started = clock();
+    let elapsed = || clock().saturating_sub(started);
     #[cfg(target_os = "linux")]
     let mut gamepad = {
         let changed = splash_renderer.update(
-            started.elapsed(),
+            elapsed(),
             stage,
             &splash_locales,
             frame.surface_mut(),
@@ -90,11 +91,11 @@ pub(super) fn run(options: Config) -> Result<(), Box<dyn Error>> {
             profiles.hid,
             profiles.evdev,
         );
-        if bootstrap.as_ref().is_some_and(|b| b.diag_input) {
+        if bootstrap.as_ref().is_some_and(|bootstrap_item| bootstrap_item.diag_input) {
             gamepad.enable_diagnostics();
         }
         if !options.display.headless {
-            gamepad.poll(started.elapsed());
+            gamepad.poll(elapsed());
         }
         gamepad
     };
@@ -140,9 +141,9 @@ pub(super) fn run(options: Config) -> Result<(), Box<dyn Error>> {
                         {
                             #[cfg(target_os = "linux")]
                             {
-                                gamepad.diagnostics().map(|mut s| {
-                                    s.headless = options.display.headless;
-                                    s
+                                gamepad.diagnostics().map(|mut sample| {
+                                    sample.headless = options.display.headless;
+                                    sample
                                 })
                             }
                             #[cfg(not(target_os = "linux"))]
@@ -172,7 +173,7 @@ pub(super) fn run(options: Config) -> Result<(), Box<dyn Error>> {
                 connection.prepare(game.clone())?;
                 if launch
                     .as_ref()
-                    .is_some_and(|d| d.minimum_elapsed(started.elapsed()))
+                    .is_some_and(|dialog_item| dialog_item.minimum_elapsed(elapsed()))
                 {
                     connection.handoff(Handoff {
                         game,
@@ -184,7 +185,7 @@ pub(super) fn run(options: Config) -> Result<(), Box<dyn Error>> {
         if !managed_games
             && launch
                 .as_ref()
-                .is_some_and(|d| d.minimum_elapsed(started.elapsed()))
+                .is_some_and(|dialog_item| dialog_item.minimum_elapsed(elapsed()))
         {
             launch = None;
             dirty = true;
@@ -211,7 +212,7 @@ pub(super) fn run(options: Config) -> Result<(), Box<dyn Error>> {
                 }
                 if ready.app.selected_game().is_some() {
                     let changed = splash_renderer.update(
-                        started.elapsed(),
+                        elapsed(),
                         Stage::Preview,
                         ready.app.locales(),
                         frame.surface_mut(),
@@ -220,7 +221,7 @@ pub(super) fn run(options: Config) -> Result<(), Box<dyn Error>> {
                     frame.prepare_selected(&ready.app);
                 }
                 let changed = splash_renderer.update(
-                    started.elapsed(),
+                    elapsed(),
                     Stage::Interface,
                     ready.app.locales(),
                     frame.surface_mut(),
@@ -231,7 +232,7 @@ pub(super) fn run(options: Config) -> Result<(), Box<dyn Error>> {
                 wait_for_release = true;
                 dirty = true;
             } else {
-                let elapsed = started.elapsed();
+                let elapsed = elapsed();
                 let visible = splash::logo_visible(elapsed);
                 if visible != logo_visible || stage_changed {
                     present_changed = splash_renderer.update(elapsed, stage, &splash_locales, frame.surface_mut())?;
@@ -242,13 +243,13 @@ pub(super) fn run(options: Config) -> Result<(), Box<dyn Error>> {
         let mut buttons = window.buttons();
         #[cfg(target_os = "linux")]
         if !options.display.headless {
-            buttons = buttons.union(gamepad.poll(started.elapsed()));
+            buttons = buttons.union(gamepad.poll(elapsed()));
         }
         if let Some(app) = &mut app {
             if app.app.input_test_enabled() {
                 use crate::input::startup::Transition;
                 let b_pressed = buttons.down(Action::Favourite) && !previous_buttons.down(Action::Favourite);
-                match startup_test.update(started.elapsed().as_millis() as u64, true, buttons.any(), b_pressed) {
+                match startup_test.update(elapsed().as_millis() as u64, true, buttons.any(), b_pressed) {
                     Transition::Start => {
                         if let Some(connection) = &mut managed {
                             connection.start_input_test()?;
@@ -265,7 +266,7 @@ pub(super) fn run(options: Config) -> Result<(), Box<dyn Error>> {
                 break;
             }
             escape_held = escape;
-            dirty |= memory_monitor.refresh(started.elapsed(), memory::read);
+            dirty |= memory_monitor.refresh(elapsed(), memory::read);
             app.app.set_memory(memory_monitor.info());
             if (dirty || startup_test.countdown() != previous_countdown) && !app.app.input_test_active() {
                 present_changed = frame
@@ -273,7 +274,7 @@ pub(super) fn run(options: Config) -> Result<(), Box<dyn Error>> {
                     .changed();
             }
             present_changed |= frame.advance_title(
-                started.elapsed(), window.is_active() && !app.app.input_test_active(),
+                elapsed(), window.is_active() && !app.app.input_test_active(),
             )?.changed();
             previous_countdown = startup_test.countdown();
             dirty = false;
@@ -284,7 +285,7 @@ pub(super) fn run(options: Config) -> Result<(), Box<dyn Error>> {
         // with update_with_buffer(), which already polls input as well.
         window.present(frame.surface(), present_changed)?;
         if let Some(dialog) = &mut launch {
-            dialog.presented(started.elapsed());
+            dialog.presented(elapsed());
         }
         if let Some(connection) = &mut managed {
             if let Some(request) = connection.take_request() {
@@ -294,7 +295,7 @@ pub(super) fn run(options: Config) -> Result<(), Box<dyn Error>> {
                     dirty: &mut dirty, screenshot: &mut screenshot, surface: frame.surface(),
                     preferences_writable, managed_games,
                     input_test_available: bootstrap.as_ref().is_some_and(|bootstrap| bootstrap.input_test),
-                    now: started.elapsed(),
+                    now: elapsed(),
                 });
                 connection.reply(response)?;
                 if closing {
@@ -326,7 +327,7 @@ pub(super) fn run(options: Config) -> Result<(), Box<dyn Error>> {
             }
             wait_for_release = false;
         }
-        for action in input.poll(buttons, started.elapsed()) {
+        for action in input.poll(buttons, elapsed()) {
             let before = app.app.focus();
             let confirming = app.app.trash_confirmation();
             let testing = app.app.input_test_active();
@@ -354,9 +355,9 @@ pub(super) fn run(options: Config) -> Result<(), Box<dyn Error>> {
     let cleanup = window.finish();
     if let Some(connection) = &mut managed {
         #[cfg(target_os = "linux")]
-        let input = gamepad.diagnostics().map(|mut s| {
-            s.headless = options.display.headless;
-            s
+        let input = gamepad.diagnostics().map(|mut sample| {
+            sample.headless = options.display.headless;
+            sample
         });
         #[cfg(not(target_os = "linux"))]
         let input = None;

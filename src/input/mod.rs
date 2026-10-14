@@ -22,6 +22,7 @@ pub struct Config {
 }
 
 #[cfg(target_os = "linux")]
+/// Load selected controller profiles, rejecting incompatible overrides and unsafe resource files.
 pub(crate) fn load_profiles(config: &Config, headless: bool) -> std::io::Result<imanlib::controls::Profiles> {
     if headless || config.gamepad.is_some() {
         return Ok(imanlib::controls::Profiles::default());

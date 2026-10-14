@@ -98,6 +98,7 @@ pub fn draw<D: DrawTarget<Color = Rgb888>>(
     draw_localized(elapsed, &Locales::default(), target)
 }
 
+/// Draw a complete localized startup splash at the supplied elapsed time.
 pub fn draw_localized<D: DrawTarget<Color = Rgb888>>(
     elapsed: Duration,
     locales: &Locales,
@@ -106,6 +107,7 @@ pub fn draw_localized<D: DrawTarget<Color = Rgb888>>(
     draw_stage(elapsed, Stage::Starting, locales, target)
 }
 
+/// Draw the current startup-stage caption using selected translations.
 pub fn draw_stage<D: DrawTarget<Color = Rgb888>>(
     elapsed: Duration,
     stage: Stage,
@@ -140,11 +142,11 @@ fn draw_logo<D: DrawTarget<Color = Rgb888>>(bounds: Rectangle, target: &mut D) -
     .draw(&mut logo)
     .unwrap(); // Surface's error type is Infallible.
     let origin = logo_bounds(bounds).top_left;
-    for (i, &pixel) in logo.pixels().iter().enumerate() {
+    for (index, &pixel) in logo.pixels().iter().enumerate() {
         if pixel != 0 {
             target.fill_solid(
                 &Rectangle::new(
-                    origin + Point::new((i % 40) as i32 * 4, (i / 40) as i32 * 4),
+                    origin + Point::new((index % 40) as i32 * 4, (index / 40) as i32 * 4),
                     Size::new(4, 4),
                 ),
                 Rgb888::new(119, 207, 180),

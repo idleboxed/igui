@@ -12,6 +12,7 @@ pub struct LaunchDialog {
 }
 
 impl LaunchDialog {
+    /// Create a localized launch dialog from the selected game without starting a process.
     pub fn new(title: String, platform: String) -> Self {
         Self {
             title,
@@ -20,10 +21,12 @@ impl LaunchDialog {
         }
     }
 
+    /// Return the platform display name retained for this dialog.
     pub fn platform_name(&self) -> &str {
         platforms::full_name(&self.platform)
     }
 
+    /// Format this dialog's launch message.
     pub fn message(&self, locales: &Locales) -> String {
         locales
             .text("Loading {title} ...")

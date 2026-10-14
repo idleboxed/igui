@@ -15,8 +15,8 @@ use imanlib::igui::GuiState;
 
 fn catalogue() -> Vec<Game> {
     ["ALPHA", "Super Mario 2", "Mario 20", "мир Mario 2", "Zebra"]
-        .into_iter().enumerate().map(|(i, title)| {
-            let mut game = crate::common::game(&i.to_string(), title, "NES");
+        .into_iter().enumerate().map(|(index, title)| {
+            let mut game = crate::common::game(&index.to_string(), title, "NES");
             game.description = Some(format!("Description of {title}"));
             game
         }).collect()
@@ -29,7 +29,7 @@ fn open(app: &mut App) {
 }
 
 fn titles(app: &App) -> Vec<&str> {
-    (0..app.visible_count()).map(|i| app.visible_game(i).unwrap().title.as_str()).collect()
+    (0..app.visible_count()).map(|index| app.visible_game(index).unwrap().title.as_str()).collect()
 }
 
 #[test]

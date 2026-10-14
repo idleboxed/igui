@@ -25,8 +25,9 @@ struct Entry {
     description: Option<String>,
 }
 
+/// Decode and validate a bounded catalogue, returning games with safe identities and paths.
 pub fn parse(bytes: &[u8]) -> Result<Vec<Game>, String> {
-    let catalogue: Catalogue = serde_json::from_slice(bytes).map_err(|e| e.to_string())?;
+    let catalogue: Catalogue = serde_json::from_slice(bytes).map_err(|error| error.to_string())?;
     let mut names = BTreeSet::new();
     let mut hashes = BTreeSet::new();
     catalogue
@@ -49,26 +50,26 @@ pub fn parse(bytes: &[u8]) -> Result<Vec<Game>, String> {
                 || !entry
                     .platform
                     .chars()
-                    .all(|c| c.is_ascii_uppercase() || c.is_ascii_digit())
-                || entry.year.is_some_and(|y| !(1..=9999).contains(&y))
+                    .all(|character| character.is_ascii_uppercase() || character.is_ascii_digit())
+                || entry.year.is_some_and(|year_item| !(1..=9999).contains(&year_item))
                 || entry.players == Some(0)
                 || entry.region.as_ref().is_some_and(|regions| {
                     regions.iter().map(String::len).sum::<usize>() > 128
-                        || regions.iter().any(|s| {
-                            s.trim().is_empty()
-                                || s.chars().any(char::is_control)
-                                || s.contains(',')
-                                || matches!(s.trim(), "?" | "-")
-                                || s.trim().eq_ignore_ascii_case("World")
+                        || regions.iter().any(|text| {
+                            text.trim().is_empty()
+                                || text.chars().any(char::is_control)
+                                || text.contains(',')
+                                || matches!(text.trim(), "?" | "-")
+                                || text.trim().eq_ignore_ascii_case("World")
                         })
                 })
                 || entry
                     .genre
                     .as_ref()
-                    .is_some_and(|g| g.trim().is_empty() || g.chars().any(char::is_control))
-                || entry.description.as_ref().is_some_and(|s| {
-                    s.len() > 16 * 1024
-                        || s.chars().any(|c| c.is_control() && !"\r\n\t".contains(c))
+                    .is_some_and(|game| game.trim().is_empty() || game.chars().any(char::is_control))
+                || entry.description.as_ref().is_some_and(|text| {
+                    text.len() > 16 * 1024
+                        || text.chars().any(|character| character.is_control() && !"\r\n\t".contains(character))
                 })
             {
                 return Err(format!("invalid metadata for {}", entry.image));
@@ -83,7 +84,7 @@ pub fn parse(bytes: &[u8]) -> Result<Vec<Game>, String> {
                 year: entry.year,
                 players: entry.players,
                 genre: entry.genre,
-                description: entry.description.map(|s| s.replace("\r\n", "\n")),
+                description: entry.description.map(|text| text.replace("\r\n", "\n")),
             })
         })
         .collect()

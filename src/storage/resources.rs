@@ -22,14 +22,16 @@ pub fn available_bytes(root: &Path) -> Option<u64> {
 }
 
 #[cfg(not(target_os = "linux"))]
+/// Return None when this platform has no supported free-space query.
 pub fn available_bytes(_root: &Path) -> Option<u64> {
     None
 }
 
+/// Read a bounded regular resource file, returning None if it does not exist.
 pub(super) fn read_regular(path: &Path, limit: usize) -> Result<Option<Vec<u8>>, String> {
     match fs::symlink_metadata(path) {
-        Err(e) if e.kind() == io::ErrorKind::NotFound => return Ok(None),
-        Err(e) => return Err(e.to_string()),
+        Err(error_item) if error_item.kind() == io::ErrorKind::NotFound => return Ok(None),
+        Err(error_item) => return Err(error_item.to_string()),
         Ok(meta) if !meta.is_file() || meta.len() > limit as u64 => {
             return Err(format!(
                 "not a regular file or too large: {}",
@@ -40,19 +42,20 @@ pub(super) fn read_regular(path: &Path, limit: usize) -> Result<Option<Vec<u8>>,
     }
     let mut bytes = Vec::new();
     File::open(path)
-        .and_then(|f| f.take(limit as u64 + 1).read_to_end(&mut bytes))
-        .map_err(|e| e.to_string())?;
+        .and_then(|file| file.take(limit as u64 + 1).read_to_end(&mut bytes))
+        .map_err(|error_item| error_item.to_string())?;
     if bytes.len() > limit {
         return Err(format!("file too large: {}", path.display()));
     }
     Ok(Some(bytes))
 }
 
+/// Read and validate the game catalogue from the selected games directory.
 pub fn load_catalogue(root: &Path) -> Result<Vec<Game>, String> {
     let path = root.join(paths::CATALOGUE_FILE);
     let bytes = read_regular(&path, CATALOGUE_LIMIT)?
         .ok_or_else(|| format!("missing {}", path.display()))?;
-    catalogue::parse(&bytes).map_err(|e| format!("{}: {e}", path.display()))
+    catalogue::parse(&bytes).map_err(|error_item| format!("{}: {error_item}", path.display()))
 }
 
 /// Read only the requested dictionary, without discovering other languages.

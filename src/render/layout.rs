@@ -57,12 +57,14 @@ pub(super) const LETTER_ROWS: usize = 20;
 pub(super) const TAB_GAP: u32 = 9;
 pub(super) const TABS_WIDTH: u32 = 532;
 
+/// Choose the first visible row for a bounded list window around the cursor.
 pub(super) fn window_start(cursor: usize, count: usize, capacity: usize) -> usize {
     cursor
         .saturating_sub(capacity / 2)
         .min(count.saturating_sub(capacity))
 }
 
+/// Return the rendered width of a platform or control tab.
 pub(super) fn tab_width(tab: TopTab<'_>) -> u32 {
     match tab {
         TopTab::Platform(_) => 80,

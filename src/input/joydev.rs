@@ -31,9 +31,13 @@ pub fn discover(directory: &Path) -> io::Result<Vec<PathBuf>> {
 
 #[derive(Clone, Debug)]
 pub struct Mapping {
+    /// Joystick button index for X / lower filters; the field name follows the physical label.
     pub x: u8,
+    /// Joystick button index for B / favourite; the field name follows the physical label.
     pub b: u8,
+    /// Joystick button index for Y / upper filters; the field name follows the physical label.
     pub y: u8,
+    /// Joystick button index for A / confirmation; the field name follows the physical label.
     pub a: u8,
     pub select: Option<u8>,
     pub start: Option<u8>,
@@ -57,7 +61,7 @@ impl Mapping {
         }
         let axis = |code| axis_map.iter().position(|&value| value == code).map(|index| index as u8);
         let button = |code| button_map.iter().position(|&value| value == code).map(|index| index as u8);
-        let (x, b, y, a) = overrides
+        let (button_x, button_b, button_y, button_a) = overrides
             .or_else(|| {
                 Some((
                     button(0x134)?,
@@ -69,20 +73,20 @@ impl Mapping {
             .ok_or(
                 "nonstandard X/B/Y/A; set --gamepad-buttons X,B,Y,A using joystick button indices",
             )?;
-        if x == b
-            || x == y
-            || b == y
-            || a == x
-            || a == b
-            || a == y
-            || [x, b, y, a]
+        if button_x == button_b
+            || button_x == button_y
+            || button_b == button_y
+            || button_a == button_x
+            || button_a == button_b
+            || button_a == button_y
+            || [button_x, button_b, button_y, button_a]
                 .iter()
                 .any(|&index| usize::from(index) >= button_map.len())
         {
             return Err("invalid X/B/Y/A joystick button indices".into());
         }
         let (axis_x, axis_y) = match (axis(0x10), axis(0x11)) {
-            (Some(x), Some(y)) => (Some(x), Some(y)), // ABS_HAT0X/Y preferred
+            (Some(horizontal_axis), Some(vertical_axis)) => (Some(horizontal_axis), Some(vertical_axis)), // ABS_HAT0X/Y preferred
             _ => (axis(0), axis(1)),                  // ABS_X/Y fallback, normalized by joydev
         };
         let dpad = [button(0x220), button(0x221), button(0x222), button(0x223)];
@@ -90,23 +94,23 @@ impl Mapping {
         let start = button(0x13b); // BTN_START, never a confirmation or exit
         if select.is_some_and(|index| {
             usize::from(index) >= button_map.len()
-                || [x, b, y, a].contains(&index)
+                || [button_x, button_b, button_y, button_a].contains(&index)
                 || dpad.contains(&Some(index))
                 || start == Some(index)
         }) {
             return Err("invalid or overlapping Select joystick button index".into());
         }
-        if start.is_some_and(|index| [x, b, y, a].contains(&index) || dpad.contains(&Some(index))) {
+        if start.is_some_and(|index| [button_x, button_b, button_y, button_a].contains(&index) || dpad.contains(&Some(index))) {
             return Err("overlapping Start joystick button index".into());
         }
         if !(axis_x.is_some() && axis_y.is_some() || dpad.iter().all(Option::is_some)) {
             return Err("joystick has no supported D-pad or X/Y axes".into());
         }
         Ok(Self {
-            x,
-            b,
-            y,
-            a,
+            x: button_x,
+            b: button_b,
+            y: button_y,
+            a: button_a,
             select,
             start,
             axis_x,
@@ -125,6 +129,7 @@ pub struct State {
 }
 
 impl State {
+    /// Create released joystick state for the selected button and axis mapping.
     pub fn new(mapping: Mapping) -> Self {
         Self {
             mapping,
@@ -193,6 +198,7 @@ impl State {
         }
     }
 
+    /// Return mapped buttons, suppressing input until a newly connected joystick is neutral.
     pub fn sample(&mut self) -> Buttons {
         let buttons = self.buttons.union(self.axes);
         let sample = buttons.union(self.pressed);
@@ -210,6 +216,7 @@ impl State {
 
 // _IOR('j', nr, T), Linux asm-generic ABI used by the x86/ARM targets.
 #[cfg(target_os = "linux")]
+/// Read one correctly sized joystick ioctl result into the supplied buffer.
 pub(crate) fn query<T>(file: &File, nr: u8, value: &mut T) -> io::Result<()> {
     let request = 0x80000000u32
         | ((std::mem::size_of::<T>() as u32) << 16)
@@ -239,6 +246,7 @@ pub(crate) struct RawJoystick {
 }
 
 #[cfg(target_os = "linux")]
+/// Open a read-only joystick device and read its bounded button and axis maps.
 pub(crate) fn open_raw(path: &Path) -> io::Result<RawJoystick> {
     let file = OpenOptions::new()
         .read(true)
@@ -267,6 +275,7 @@ pub(crate) fn open_raw(path: &Path) -> io::Result<RawJoystick> {
 
 #[cfg(target_os = "linux")]
 impl Device {
+    /// Open a joystick with checked automatic or explicitly supplied control mapping.
     pub(super) fn open(
         path: &Path,
         overrides: Option<(u8, u8, u8, u8)>,
@@ -281,6 +290,7 @@ impl Device {
         })
     }
 
+    /// Drain bounded joystick events and return the current logical buttons.
     pub(super) fn poll(&mut self, mut diagnostics: Option<&mut Counters>) -> io::Result<Buttons> {
         // Bound work even with a noisy device; never block the UI thread.
         for _ in 0..1024 {

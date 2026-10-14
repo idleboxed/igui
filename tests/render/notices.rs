@@ -32,8 +32,8 @@ fn notice_details_are_wrapped_bounded_and_control_characters_are_not_rendered() 
 
     assert!(lines.contains(&"Нет ядра для платформы: FDS".to_string()));
     assert!(lines.iter().all(|line| line.chars().count() <= 76));
-    assert!(lines.iter().flat_map(|line| line.chars()).all(|c| !c.is_control()));
-    assert!(lines.iter().map(|s| s.chars().count()).sum::<usize>() < 2100);
+    assert!(lines.iter().flat_map(|line| line.chars()).all(|character| !character.is_control()));
+    assert!(lines.iter().map(|text| text.chars().count()).sum::<usize>() < 2100);
 }
 
 #[test]

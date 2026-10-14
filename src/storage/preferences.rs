@@ -15,11 +15,12 @@ pub struct Preferences {
 }
 
 impl Preferences {
+    /// Read bounded preferences without migration or writing, retaining original bytes for change checks.
     pub fn load(root: &Path) -> Result<Self, String> {
         let original = read_regular(&root.join(PREFERENCES_FILE), PREFS_LIMIT)?;
         let document: Map<String, Value> = match &original {
             Some(bytes) => {
-                serde_json::from_slice(bytes).map_err(|e| format!("{PREFERENCES_FILE}: {e}"))?
+                serde_json::from_slice(bytes).map_err(|error_item| format!("{PREFERENCES_FILE}: {error_item}"))?
             }
             None => Map::from_iter([("favourites".into(), Value::Array(vec![]))]),
         };
@@ -31,7 +32,7 @@ impl Preferences {
         for value in entries {
             let name = value
                 .as_str()
-                .filter(|s| catalogue::valid_hash(s))
+                .filter(|text| catalogue::valid_hash(text))
                 .ok_or_else(|| format!("{PREFERENCES_FILE}: invalid favourite SHA-256"))?;
             favourites.insert(name.to_owned());
         }
@@ -45,7 +46,7 @@ impl Preferences {
             {
                 let hash = value
                     .as_str()
-                    .filter(|s| catalogue::valid_hash(s))
+                    .filter(|text| catalogue::valid_hash(text))
                     .ok_or_else(|| format!("{PREFERENCES_FILE}: invalid trash SHA-256"))?;
                 if seen.insert(hash) {
                     trash.push(hash.to_owned());
@@ -62,6 +63,7 @@ impl Preferences {
         })
     }
 
+    /// Borrow the loaded or successfully saved favourite hashes.
     pub fn favourites(&self) -> &BTreeSet<String> {
         &self.favourites
     }
@@ -71,6 +73,7 @@ impl Preferences {
         &self.trash
     }
 
+    /// Return the valid requested language code, defaulting to English.
     pub fn language(&self) -> &str {
         self.document
             .get("lang")
@@ -120,7 +123,7 @@ impl Preferences {
         let mut document = self.document.clone();
         document.insert(
             "favourites".into(),
-            serde_json::to_value(&favourites).map_err(|e| e.to_string())?,
+            serde_json::to_value(&favourites).map_err(|error_item| error_item.to_string())?,
         );
         self.save_document(document)?;
         self.favourites = favourites;
@@ -149,7 +152,7 @@ impl Preferences {
         let mut document = self.document.clone();
         document.insert(
             "trash".into(),
-            serde_json::to_value(&trash).map_err(|e| e.to_string())?,
+            serde_json::to_value(&trash).map_err(|error_item| error_item.to_string())?,
         );
         self.save_document(document)?;
         self.trash = trash;
@@ -165,7 +168,7 @@ impl Preferences {
         if document == self.document {
             return Ok(());
         }
-        let mut bytes = serde_json::to_vec_pretty(&document).map_err(|e| e.to_string())?;
+        let mut bytes = serde_json::to_vec_pretty(&document).map_err(|error_item| error_item.to_string())?;
         bytes.push(b'\n');
         if bytes.len() > PREFS_LIMIT {
             return Err(format!("{PREFERENCES_FILE}: file too large"));
@@ -190,7 +193,7 @@ impl Preferences {
             .write(true)
             .create_new(true)
             .open(&temp)
-            .map_err(|e| format!("{}: {e}", temp.display()))?;
+            .map_err(|error_item| format!("{}: {error_item}", temp.display()))?;
         let result = (|| {
             if read_regular(&path, PREFS_LIMIT)? != self.original {
                 return Err("preferences changed externally; reload before saving".into());
@@ -198,12 +201,12 @@ impl Preferences {
             output
                 .write_all(bytes)
                 .and_then(|()| output.sync_all())
-                .map_err(|e| e.to_string())?;
+                .map_err(|error_item| error_item.to_string())?;
             drop(output);
-            fs::rename(&temp, &path).map_err(|e| e.to_string())?;
+            fs::rename(&temp, &path).map_err(|error_item| error_item.to_string())?;
             File::open(&self.root)
                 .and_then(|dir| dir.sync_all())
-                .map_err(|e| e.to_string())
+                .map_err(|error_item| error_item.to_string())
         })();
         if result.is_err() {
             // Only our own create_new file is eligible for cleanup.

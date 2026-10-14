@@ -10,7 +10,7 @@ fn app() -> App {
     let mut first = crate::common::game("a.nes", "A", "NES");
     first.description = Some(
         (0..8)
-            .map(|i| format!("Description line {i}"))
+            .map(|index| format!("Description line {index}"))
             .collect::<Vec<_>>()
             .join("\n"),
     );

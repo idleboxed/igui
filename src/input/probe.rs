@@ -36,6 +36,7 @@ fn flush_records(probe: &mut Probe, budget: &mut LogBudget) -> io::Result<()> {
     Ok(())
 }
 
+/// Run the bounded read-only input probe, handling IPC without writing menu preferences.
 pub(crate) fn run(
     options: &Config<'_>,
     managed: &mut Option<Managed>,
@@ -60,7 +61,7 @@ pub(crate) fn run(
             if !options.headless && ms >= next_usb && usb_snapshots < 8 {
                 next_usb = ms.saturating_add(2000);
                 let snapshot = usb_inventory(Path::new("/sys/bus/usb/devices"))
-                    .unwrap_or_else(|e| json!({"error":e.to_string()}));
+                    .unwrap_or_else(|error_item| json!({"error":error_item.to_string()}));
                 if last_usb.as_ref() != Some(&snapshot) {
                     let record = json!({"event":"usb_topology","ms":ms,"snapshot":snapshot});
                     if let Some(line) = budget.encode(&record) {

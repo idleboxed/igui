@@ -92,13 +92,13 @@ fn parse_options() -> Result<Option<Config>, Box<dyn Error>> {
                     .split(',')
                     .map(str::parse::<u8>)
                     .collect::<Result<Vec<_>, _>>()?;
-                let [x, b, y, a] = values.as_slice() else {
+                let [filter_button, favourite_button, platform_button, activate_button] = values.as_slice() else {
                     return Err("--gamepad-buttons needs exactly four indices: X,B,Y,A".into());
                 };
-                if x == b || x == y || b == y || a == x || a == b || a == y {
+                if filter_button == favourite_button || filter_button == platform_button || favourite_button == platform_button || activate_button == filter_button || activate_button == favourite_button || activate_button == platform_button {
                     return Err("X, B, Y and A must be different buttons".into());
                 }
-                options.input.gamepad_buttons = Some((*x, *b, *y, *a));
+                options.input.gamepad_buttons = Some((*filter_button, *favourite_button, *platform_button, *activate_button));
             }
             "--gamepad-select" => {
                 if options.input.gamepad_select.is_some() {
@@ -166,7 +166,7 @@ fn parse_options() -> Result<Option<Config>, Box<dyn Error>> {
     }
     if options.input.input_probe {
         if !cfg!(target_os = "linux")
-            || options.frames.is_none_or(|n| n > 18_000)
+            || options.frames.is_none_or(|count| count > 18_000)
             || options.input.gamepad.is_some()
             || options.input.gamepad_buttons.is_some()
             || options.input.gamepad_select.is_some()
@@ -193,8 +193,8 @@ fn parse_options() -> Result<Option<Config>, Box<dyn Error>> {
     if options.input.gamepad_select.is_some() && options.input.gamepad.is_none() {
         return Err("--gamepad-select requires --gamepad".into());
     }
-    if let (Some(select), Some((x, b, y, a))) = (options.input.gamepad_select, options.input.gamepad_buttons) {
-        if [x, b, y, a].contains(&select) {
+    if let (Some(select), Some((filter_button, favourite_button, platform_button, activate_button))) = (options.input.gamepad_select, options.input.gamepad_buttons) {
+        if [filter_button, favourite_button, platform_button, activate_button].contains(&select) {
             return Err("Select must differ from X, B, Y and A".into());
         }
     }
@@ -211,6 +211,7 @@ fn parse_options() -> Result<Option<Config>, Box<dyn Error>> {
     Ok(Some(options))
 }
 
+/// Parse the agreed CLI options and run a GUI session, reporting failures to stderr.
 pub fn run() -> Result<(), Box<dyn Error>> {
     let Some(options) = parse_options()? else {
         return Ok(());

@@ -56,11 +56,11 @@ fn saved_language_translates_loading_label_without_changing_logo() {
         .iter()
         .zip(surface.pixels())
         .enumerate()
-        .filter_map(|(i, (a, b))| (a != b).then_some(i))
+        .filter_map(|(index_item, (first_item, second_item))| (first_item != second_item).then_some(index_item))
         .collect();
     assert!(!changed.is_empty());
-    for i in changed {
-        assert!((423..445).contains(&(i / WIDTH as usize)));
+    for index_item in changed {
+        assert!((423..445).contains(&(index_item / WIDTH as usize)));
     }
 }
 
@@ -87,11 +87,11 @@ fn only_the_centered_logo_blinks_not_the_background_or_loading_label() {
     assert_eq!(on, frame(2000));
     assert_eq!(off, frame(1999));
     let mut changed = 0;
-    for (index, (&a, &b)) in on.iter().zip(&off).enumerate() {
-        if a != b {
-            let (x, y) = (index % WIDTH as usize, index / WIDTH as usize);
-            assert!((559..720).contains(&x));
-            assert!((319..400).contains(&y));
+    for (index, (&first_item, &second_item)) in on.iter().zip(&off).enumerate() {
+        if first_item != second_item {
+            let (position_x, position_y) = (index % WIDTH as usize, index / WIDTH as usize);
+            assert!((559..720).contains(&position_x));
+            assert!((319..400).contains(&position_y));
             changed += 1;
         }
     }

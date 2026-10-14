@@ -4,6 +4,7 @@ use super::launch::LaunchDialog;
 use crate::{model::Effect, storage};
 use imanlib::igui::{Action, LaunchRequest};
 
+/// Apply a model action and its explicit storage or launch effects, returning whether to close.
 pub(super) fn apply(
     session: &mut Session,
     action: Action,
@@ -83,6 +84,7 @@ pub(super) fn apply(
     false
 }
 
+/// Build the manager's launch request for the selected visible game, if any.
 pub(super) fn launch_request(session: &Session) -> Option<LaunchRequest> {
     session.app.selected_game().map(|game| LaunchRequest {
         hash: game.hash.clone(),

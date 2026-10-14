@@ -2,11 +2,12 @@
 use super::*;
 
 impl Renderer {
-    pub(super) fn header<D: DrawTarget<Color = Rgb888>>(&self, app: &App, d: &mut D) -> Result<(), D::Error> {
-        fill(d, rectangle(16, 16, 1248, 52), PANEL)?;
-        text(d, "IGUI", 32, 30, ACTIVE, false)?;
+    /// Draw the menu header and its current exit focus.
+    pub(super) fn header<D: DrawTarget<Color = Rgb888>>(&self, app: &App, device: &mut D) -> Result<(), D::Error> {
+        fill(device, rectangle(16, 16, 1248, 52), PANEL)?;
+        text(device, "IGUI", 32, 30, ACTIVE, false)?;
         text(
-            d,
+            device,
             concat!("idle gui / ", env!("CARGO_PKG_VERSION"), "-", env!("IGUI_BUILD_UTC")),
             92,
             33,
@@ -18,29 +19,31 @@ impl Renderer {
         let red = Rgb888::new(240, 80, 80);
         Arc::new(Point::new(1226, 37), 12, 310.0.deg(), 280.0.deg())
             .into_styled(PrimitiveStyle::with_stroke(red, 1))
-            .draw(d)?;
+            .draw(device)?;
         Line::new(Point::new(1232, 35), Point::new(1232, 42))
             .into_styled(PrimitiveStyle::with_stroke(red, 1))
-            .draw(d)?;
+            .draw(device)?;
         if app.exit_focused() {
-            border(d, exit, TEXT, 1)?;
+            border(device, exit, TEXT, 1)?;
         }
 
         Ok(())
     }
 
-    pub(super) fn footer<D: DrawTarget<Color = Rgb888>>(&self, app: &App, d: &mut D) -> Result<(), D::Error> {
-        self.footer_hints(app, d)?;
-        self.footer_stats(app, d)
+    /// Draw footer hints and system statistics.
+    pub(super) fn footer<D: DrawTarget<Color = Rgb888>>(&self, app: &App, device: &mut D) -> Result<(), D::Error> {
+        self.footer_hints(app, device)?;
+        self.footer_stats(app, device)
     }
 
+    /// Draw action hints for the current menu state.
     pub(super) fn footer_hints<D: DrawTarget<Color = Rgb888>>(
         &self,
         app: &App,
-        d: &mut D,
+        device: &mut D,
     ) -> Result<(), D::Error> {
         fill(
-            d,
+            device,
             rectangle(0, FOOTER_Y, FOOTER_STATS_X as u32, HEIGHT - FOOTER_Y as u32),
             PANEL,
         )?;
@@ -67,7 +70,7 @@ impl Renderer {
             Focus::Header => "A exit | ↑/↓ details | Y top filters | X bottom filters",
         });
         hints::draw(
-            d,
+            device,
             hint,
             Point::new(24, FOOTER_Y + 12),
             (FOOTER_STATS_X - 48) as u32,
@@ -76,6 +79,7 @@ impl Renderer {
         Ok(())
     }
 
+    /// Format catalogue, storage and memory values for the footer.
     pub(super) fn stats_text(app: &App) -> (String, String, i32, i32) {
         let amount = app.available_bytes().map_or_else(
             || "-".into(),
@@ -96,13 +100,14 @@ impl Renderer {
         (memory, free, memory_x, free_x)
     }
 
+    /// Draw the current catalogue and system statistics.
     pub(super) fn footer_stats<D: DrawTarget<Color = Rgb888>>(
         &self,
         app: &App,
-        d: &mut D,
+        device: &mut D,
     ) -> Result<(), D::Error> {
         fill(
-            d,
+            device,
             rectangle(
                 FOOTER_STATS_X,
                 FOOTER_Y,
@@ -112,8 +117,8 @@ impl Renderer {
             PANEL,
         )?;
         let (memory, free, memory_x, free_x) = Self::stats_text(app);
-        text(d, &memory, memory_x, FOOTER_Y + 12, MUTED, true)?;
-        text(d, &free, free_x, FOOTER_Y + 12, MUTED, true)
+        text(device, &memory, memory_x, FOOTER_Y + 12, MUTED, true)?;
+        text(device, &free, free_x, FOOTER_Y + 12, MUTED, true)
     }
 
 }

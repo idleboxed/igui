@@ -8,7 +8,7 @@ pub mod launch;
 pub mod loading;
 pub mod startup;
 
-use std::{error::Error, path::PathBuf};
+use std::{error::Error, path::PathBuf, time::{Duration, Instant}};
 
 #[derive(Default)]
 pub struct Config {
@@ -21,6 +21,14 @@ pub struct Config {
     pub input: crate::input::Config,
 }
 
+/// Run the configured menu session with the system's monotonic clock.
 pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
-    session::run(config)
+    let started = Instant::now();
+    run_with_clock(config, || started.elapsed())
+}
+
+/// Run the same session with a caller-owned monotonic clock for UI timers.
+/// Clock values must not decrease; I/O waits remain independently bounded.
+pub fn run_with_clock(config: Config, clock: impl Fn() -> Duration) -> Result<(), Box<dyn Error>> {
+    session::run(config, clock)
 }

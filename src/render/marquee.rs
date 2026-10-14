@@ -16,6 +16,7 @@ pub struct Marquee {
 }
 
 impl Marquee {
+    /// Create title scrolling state for a content width and clipped viewport width.
     pub fn new(content_width: usize, viewport_width: usize) -> Self {
         assert!(viewport_width > 0);
         Self {
@@ -28,10 +29,12 @@ impl Marquee {
         }
     }
 
+    /// Return the title's measured content width.
     pub fn content_width(&self) -> usize {
         self.content_width
     }
 
+    /// Return the current horizontal scrolling offset in pixels.
     pub fn offset(&self) -> usize {
         self.offset
     }

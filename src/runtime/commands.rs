@@ -21,6 +21,7 @@ pub(super) struct Context<'a> {
     pub now: Duration,
 }
 
+/// Apply one GUI-control request and return its outcome plus whether the session should close.
 pub(super) fn handle(request: Request, context: Context<'_>) -> (Response, bool) {
     let Context { options, app, notice, launch, startup_test, wait_for_release, dirty,
         screenshot, surface, preferences_writable, managed_games, input_test_available, now } = context;
@@ -32,7 +33,7 @@ pub(super) fn handle(request: Request, context: Context<'_>) -> (Response, bool)
                 "ready":app.is_some(), "launching":launch.is_some(),
                 "preferences_writable":preferences_writable, "headless":options.display.headless,
                 "input_test_available":input_test_available,
-                "input_test_active":app.as_ref().is_some_and(|s| s.app.input_test_active()),
+                "input_test_active":app.as_ref().is_some_and(|session| session.app.input_test_active()),
                 "input_test_countdown":startup_test.countdown(),
             }),
         ),
@@ -42,7 +43,7 @@ pub(super) fn handle(request: Request, context: Context<'_>) -> (Response, bool)
         }
         "igui.input" => {
             match serde_json::from_value::<InputRequest>(request.params.clone()) {
-                Err(e) => Response::error(request.id, "invalid_params", e),
+                Err(error_item) => Response::error(request.id, "invalid_params", error_item),
                 Ok(params) if startup_test.countdown().is_some() => {
                     let cancelled = params.action == "b";
                     if cancelled {
@@ -52,7 +53,7 @@ pub(super) fn handle(request: Request, context: Context<'_>) -> (Response, bool)
                     }
                     Response::done(request.id, json!({"processed":true,"blocked":!cancelled,"closing":false}))
                 }
-                Ok(_) if app.as_ref().is_some_and(|s| s.app.input_test_active()) => {
+                Ok(_) if app.as_ref().is_some_and(|session| session.app.input_test_active()) => {
                     Response::done(request.id, json!({"processed":true,"blocked":true,"closing":false}))
                 }
                 Ok(params) => match Action::parse(&params.action) {
